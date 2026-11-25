@@ -16,7 +16,7 @@
     "dev": "node scripts/dev.mjs",
     "dev:website": "npm --prefix apps/website run dev",
     "dev:dashboards": "npm --prefix apps/dashboards run dev",
-    "build": "npm run build:website && npm run build:dashboards",
+    "build": "npm run build:website && npm run build:dashboards && node scripts/bundle-dist.mjs",
     "build:website": "npm --prefix apps/website run build",
     "build:dashboards": "npm --prefix apps/dashboards run build",
     "typecheck": "npm --prefix apps/website run lint && npm run typecheck:dashboards",
