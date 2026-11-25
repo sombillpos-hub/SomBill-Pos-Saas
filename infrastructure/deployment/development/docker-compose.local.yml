@@ -1,0 +1,20 @@
+# Local development override: publishes PostgreSQL, Redis and RabbitMQ on 127.0.0.1 so the backend can run on the host
+# (`pnpm dev`). Used by `node scripts/setup-backend.mjs --infra`. Never use this file on a server.
+#   docker compose -f infrastructure/deployment/development/docker-compose.yml \
+#                  -f infrastructure/deployment/development/docker-compose.local.yml \
+#                  --env-file infrastructure/deployment/development/.env up -d postgres redis rabbitmq
+
+services:
+  postgres:
+    ports: ["127.0.0.1:5432:5432"]
+    networks: [data, host-access]
+  redis:
+    ports: ["127.0.0.1:6379:6379"]
+    networks: [data, host-access]
+  rabbitmq:
+    ports: ["127.0.0.1:5672:5672"] # the management UI (15672) is already published by the base file
+    networks: [data, host-access]
+
+# The base stack's `data` network is internal (no host access); this extra network carries the published ports.
+networks:
+  host-access: {}

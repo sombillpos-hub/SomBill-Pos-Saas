@@ -1,0 +1,46 @@
+{
+  "name": "@sombill/shared-utils",
+  "private": true,
+  "version": "0.2.0",
+  "type": "module",
+  "description": "Express building blocks: service app, errors, pagination, OpenAPI helpers, environment loading",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@sombill/shared-types": "workspace:*",
+    "zod": "^4.1.12",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "cors": "^2.8.5",
+    "pino": "^10.1.0",
+    "pino-http": "^11.0.0",
+    "@asteasolutions/zod-to-openapi": "^8.1.0",
+    "swagger-ui-express": "^5.0.1",
+    "cookie-parser": "^1.4.7",
+    "@sombill/logger": "workspace:*",
+    "@sombill/validation": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.5",
+    "@types/cors": "^2.8.19",
+    "@types/swagger-ui-express": "^4.1.8",
+    "@types/cookie-parser": "^1.4.10",
+    "supertest": "^7.1.4",
+    "@types/supertest": "^6.0.3"
+  }
+}

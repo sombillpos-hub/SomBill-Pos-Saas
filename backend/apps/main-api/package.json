@@ -1,0 +1,45 @@
+{
+  "name": "@sombill/main-api",
+  "private": true,
+  "version": "0.3.0",
+  "type": "module",
+  "description": "Main API: identity (users, sessions, RBAC, audit) and organization (organizations, branches) modules in one process behind the gateway",
+  "scripts": {
+    "dev": "node --env-file-if-exists=.env --conditions=source --import tsx --watch src/server.ts",
+    "start": "node dist/server.js",
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run --passWithNoTests",
+    "db:seed": "node --env-file-if-exists=.env --conditions=source --import tsx ../../../database/prisma/seed/index.ts"
+  },
+  "dependencies": {
+    "@asteasolutions/zod-to-openapi": "^8.1.0",
+    "@sombill/authentication": "workspace:*",
+    "@sombill/authorization": "workspace:*",
+    "@sombill/database": "workspace:*",
+    "@sombill/logger": "workspace:*",
+    "@sombill/messaging": "workspace:*",
+    "@sombill/shared-types": "workspace:*",
+    "@sombill/shared-utils": "workspace:*",
+    "@sombill/validation": "workspace:*",
+    "express": "^5.1.0",
+    "jose": "^6.1.0",
+    "multer": "^2.5.0",
+    "zod": "^4.1.12",
+    "@sombill/storage": "workspace:*"
+  },
+  "devDependencies": {
+    "@sombill/testing": "workspace:*",
+    "@types/express": "^5.0.5",
+    "@types/multer": "^2.3.0",
+    "@types/supertest": "^6.0.3",
+    "supertest": "^7.1.4",
+    "tsx": "^4.21.0"
+  },
+  "exports": {
+    "./runtime": {
+      "source": "./src/config/runtime.ts",
+      "default": "./dist/config/runtime.js"
+    }
+  }
+}

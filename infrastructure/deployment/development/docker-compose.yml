@@ -1,0 +1,163 @@
+# SomBill – full single-host stack (development base; staging/production add an override file).
+#   1. bash scripts/generate-jwt-keys.sh                         (writes infrastructure/secrets/jwt-*.pem)
+#   2. cp infrastructure/deployment/development/.env.example infrastructure/deployment/development/.env
+#   3. docker compose up --build                                 (from the project root; root docker-compose.yml includes this)
+# Dashboards: http://localhost   API: http://localhost/api/v1   Docs: http://localhost/api/docs   RabbitMQ UI: http://localhost:15672
+name: sombill
+
+x-service-env: &service-env
+  NODE_ENV: production
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+  RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
+  JWT_ISSUER: sombill-identity
+  JWT_AUDIENCE: sombill-api
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      IDENTITY_DB_MIGRATOR_PASSWORD: ${IDENTITY_DB_MIGRATOR_PASSWORD:?}
+      IDENTITY_DB_APP_PASSWORD: ${IDENTITY_DB_APP_PASSWORD:?}
+      ORGANIZATION_DB_MIGRATOR_PASSWORD: ${ORGANIZATION_DB_MIGRATOR_PASSWORD:?}
+      ORGANIZATION_DB_APP_PASSWORD: ${ORGANIZATION_DB_APP_PASSWORD:?}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ../../postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 20
+    networks: [data]
+
+  redis:
+    image: redis:7-alpine
+    command:
+      [
+        "redis-server",
+        "/usr/local/etc/redis/redis.conf",
+        "--requirepass",
+        "${REDIS_PASSWORD:?}",
+      ]
+    volumes:
+      - redis-data:/data
+      - ../../redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    healthcheck:
+      test: ["CMD-SHELL", 'redis-cli -a "$$REDIS_PASSWORD" ping | grep PONG']
+      interval: 5s
+      retries: 20
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    networks: [data]
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:?}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?}
+    ports: ["127.0.0.1:15672:15672"]
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+      - ../../rabbitmq/rabbitmq.conf:/etc/rabbitmq/conf.d/90-sombill.conf:ro
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      retries: 20
+    networks: [data]
+
+  main-api-migrate:
+    build:
+      context: ../../../backend
+      dockerfile: ../infrastructure/docker/backend.Dockerfile
+      target: migrate
+      args: { APP: main-api }
+      additional_contexts: { database: ../../../database }
+    environment:
+      IDENTITY_DATABASE_URL: postgresql://identity_migrator:${IDENTITY_DB_MIGRATOR_PASSWORD}@postgres:5432/sombill_identity
+      ORGANIZATION_DATABASE_URL: postgresql://organization_migrator:${ORGANIZATION_DB_MIGRATOR_PASSWORD}@postgres:5432/sombill_organization
+    depends_on: { postgres: { condition: service_healthy } }
+    networks: [data]
+
+  main-api:
+    build:
+      context: ../../../backend
+      dockerfile: ../infrastructure/docker/backend.Dockerfile
+      target: runtime
+      args: { APP: main-api }
+      additional_contexts: { database: ../../../database }
+    environment:
+      <<: *service-env
+      PORT: 4001
+      IDENTITY_DATABASE_URL: postgresql://identity_app:${IDENTITY_DB_APP_PASSWORD}@postgres:5432/sombill_identity
+      ORGANIZATION_DATABASE_URL: postgresql://organization_app:${ORGANIZATION_DB_APP_PASSWORD}@postgres:5432/sombill_organization
+      JWT_PRIVATE_KEY_FILE: /run/secrets/jwt_private_key
+      JWT_PUBLIC_KEY_FILE: /run/secrets/jwt_public_key
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      STORAGE_LOCAL_DIR: /app/storage
+      UPLOAD_MAX_BYTES: ${UPLOAD_MAX_BYTES:-5242880}
+    volumes: [uploads-data:/app/storage]
+    secrets: [jwt_private_key, jwt_public_key]
+    depends_on:
+      main-api-migrate: { condition: service_completed_successfully }
+      rabbitmq: { condition: service_healthy }
+    networks: [data, internal]
+
+  api-gateway:
+    build:
+      context: ../../../backend
+      dockerfile: ../infrastructure/docker/backend.Dockerfile
+      target: runtime
+      args: { APP: api-gateway }
+    environment:
+      NODE_ENV: production
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      PORT: 4000
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      JWT_PUBLIC_KEY_FILE: /run/secrets/jwt_public_key
+      MAIN_API_URL: http://main-api:4001
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      TRUST_PROXY_HOPS: 1
+      DOCS_ENABLED: ${DOCS_ENABLED:-true}
+    secrets: [jwt_public_key]
+    depends_on:
+      redis: { condition: service_healthy }
+      main-api: { condition: service_started }
+    networks: [data, internal, edge]
+
+  # Manager / Waiter / Cashier / Super-admin dashboards (static build served by Nginx inside the image).
+  dashboards:
+    build:
+      context: ../../../frontend
+      dockerfile: ../infrastructure/docker/frontend.Dockerfile
+      additional_contexts: { nginx: ../../docker/nginx }
+      args:
+        APP: dashboards
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL:-}
+        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY:-}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api/v1}
+    networks: [edge]
+
+  nginx:
+    image: nginx:1.27-alpine
+    ports: ["80:80"]
+    volumes: ["../../nginx/nginx.conf:/etc/nginx/nginx.conf:ro"]
+    depends_on: [api-gateway, dashboards]
+    networks: [edge]
+
+# Only Nginx is published; services, databases and the broker are reachable inside their networks only.
+networks:
+  edge: {}
+  internal: { internal: true }
+  data: { internal: true }
+
+secrets:
+  jwt_private_key: { file: ../../secrets/jwt-private.pem }
+  jwt_public_key: { file: ../../secrets/jwt-public.pem }
+
+volumes:
+  uploads-data: {}
+  postgres-data: {}
+  redis-data: {}
+  rabbitmq-data: {}

@@ -1,0 +1,79 @@
+/*
+ * Cross-Browser (Chrome, Edge, Firefox, Brave, Safari), Desktop OS (Windows, macOS),
+ * Mobile/iPad safe-area, and 2G/3G Low-Resource Lite Mode compatibility layer.
+ */
+@media screen {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-x: hidden;
+  }
+
+  /* Eliminate 300ms tap delay on mobile Android, iPhone, and iPad */
+  button,
+  a,
+  [role='button'],
+  input,
+  select,
+  textarea {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Cross-browser thin scrollbars (Firefox + Chromium/Safari) */
+  * {
+    scrollbar-width: thin;
+  }
+
+  /* iOS / iPadOS notch & home-indicator safe-area support */
+  .sb-dock {
+    bottom: max(12px, env(safe-area-inset-bottom));
+  }
+  .sb-topbar {
+    padding-top: env(safe-area-inset-top);
+  }
+  .sb-app-root {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  /* Connection badge syncing state */
+  .sb-conn[data-state='syncing'] {
+    background: rgba(249, 115, 22, 0.14);
+    border-color: rgba(249, 115, 22, 0.34);
+    color: #fb923c;
+  }
+  [data-sb-theme='light'] .sb-conn[data-state='syncing'] {
+    background: rgba(249, 115, 22, 0.12);
+    border-color: rgba(234, 88, 12, 0.32);
+    color: #c2410c;
+  }
+
+  /* ---- 2G / 3G Slow Network & Low-RAM Lite Mode ([data-sb-lite="true"]) ------------------------------------ */
+  html[data-sb-lite='true'] .sb-ambient,
+  html[data-sb-lite='true'] .sb-scroll-progress {
+    display: none !important;
+  }
+  html[data-sb-lite='true'] .sb-topbar,
+  html[data-sb-lite='true'] .sb-sidebar,
+  html[data-sb-lite='true'] .card,
+  html[data-sb-lite='true'] .card-glass-archetype,
+  html[data-sb-lite='true'] .sb-dock {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  html[data-sb-lite='true'] .sb-aurora,
+  html[data-sb-lite='true'] .sb-brand-glow,
+  html[data-sb-lite='true'] .sb-brand-text b {
+    animation: none !important;
+  }
+}

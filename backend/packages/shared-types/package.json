@@ -1,0 +1,26 @@
+{
+  "name": "@sombill/shared-types",
+  "private": true,
+  "version": "0.2.0",
+  "type": "module",
+  "description": "Shared TypeScript types: roles, permissions, JWT claims, API response envelopes",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

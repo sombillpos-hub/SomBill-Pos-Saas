@@ -1,0 +1,7 @@
+{
+  "name": "@sombill/manager",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Manager dashboard (13 modules)"
+}

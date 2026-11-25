@@ -1,0 +1,4 @@
+SomBill Waiter design update (17 files). Apply AFTER the Manager, Theme-Toggle and Cashier zips.
+Unzip over D:\SomBill\SomBill Project (same folder structure), then in frontend\dashboards run:
+  npm run typecheck && npm run lint && npm test
+No new dependencies. Report: documentation/project/WAITER_DESIGN_REFACTOR_REPORT.md

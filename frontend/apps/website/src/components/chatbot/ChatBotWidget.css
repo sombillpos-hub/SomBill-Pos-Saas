@@ -1,0 +1,677 @@
+/* ============================================================================
+   SOMBILL AI v2.0 — ULTRA-PREMIUM FLOATING POS & HOSPITALITY CHATBOT STYLES
+   ============================================================================ */
+
+@keyframes lcb-float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+@keyframes lcb-spin-cw {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes lcb-spin-ccw {
+  0% {
+    transform: rotate(360deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes lcb-welcome-ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.75;
+  }
+  75%,
+  100% {
+    transform: scale(1.85);
+    opacity: 0;
+  }
+}
+
+@keyframes lcb-laser-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 300% 50%;
+  }
+}
+
+@keyframes lcb-star-twinkle {
+  0%,
+  100% {
+    opacity: 0.18;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.25);
+  }
+}
+
+@keyframes lcb-dot-bounce {
+  0%,
+  80%,
+  100% {
+    transform: translateY(0) scale(0.85);
+    opacity: 0.55;
+  }
+  40% {
+    transform: translateY(-5px) scale(1.1);
+    opacity: 1;
+  }
+}
+
+@keyframes lcb-wave-bar {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+/* Root Wrapper */
+.lcb-root {
+  position: fixed;
+  bottom: 26px;
+  right: 26px;
+  z-index: 9990;
+  font-family:
+    'Outfit',
+    'Plus Jakarta Sans',
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+}
+
+/* Floating Trigger Button (60px x 60px) */
+.lcb-trigger-wrap {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  animation: lcb-float 3.8s ease-in-out infinite;
+}
+
+.lcb-trigger-btn {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: linear-gradient(135deg, #dc2626 0%, #f97316 60%, #fbbf24 100%);
+  box-shadow:
+    0 8px 32px rgba(220, 38, 38, 0.55),
+    0 0 60px rgba(249, 115, 22, 0.25);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 5;
+  transition:
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.25s ease;
+}
+
+.lcb-trigger-btn:hover {
+  transform: scale(1.06);
+  box-shadow:
+    0 12px 38px rgba(220, 38, 38, 0.72),
+    0 0 70px rgba(249, 115, 22, 0.4);
+}
+
+/* 3 Counter-Rotating Orbital Rings */
+.lcb-ring {
+  position: absolute;
+  border-radius: 9999px;
+  border: 1.5px solid transparent;
+  pointer-events: none;
+}
+
+.lcb-ring-1 {
+  inset: -9px;
+  border-top-color: rgba(220, 38, 38, 0.75);
+  border-right-color: rgba(220, 38, 38, 0.25);
+  animation: lcb-spin-cw 2.8s linear infinite;
+}
+
+.lcb-ring-2 {
+  inset: -18px;
+  border-top-color: rgba(249, 115, 22, 0.5);
+  border-left-color: rgba(249, 115, 22, 0.2);
+  animation: lcb-spin-ccw 4.5s linear infinite;
+}
+
+.lcb-ring-3 {
+  inset: -27px;
+  border-bottom-color: rgba(251, 191, 36, 0.3);
+  animation: lcb-spin-cw 7s linear infinite;
+}
+
+.lcb-welcome-pulse {
+  position: absolute;
+  inset: -4px;
+  border-radius: 9999px;
+  border: 2px solid rgba(249, 115, 22, 0.65);
+  animation: lcb-welcome-ping 2.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Pulsing Green Online Status Dot */
+.lcb-online-dot {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 13px;
+  height: 13px;
+  border-radius: 9999px;
+  background: #10b981;
+  border: 2px solid #080305;
+  box-shadow: 0 0 10px #10b981;
+  z-index: 8;
+}
+
+/* Unread Message Badge */
+.lcb-badge-count {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #dc2626, #f97316);
+  border: 2px solid #080305;
+  color: #ffffff;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.6);
+  z-index: 9;
+}
+
+/* ============================================================================
+   GLASSMORPHIC CHAT WINDOW (370px x 560px)
+   ============================================================================ */
+.lcb-window {
+  position: absolute;
+  bottom: 78px;
+  right: 0;
+  width: 370px;
+  height: 560px;
+  background: rgba(10, 4, 6, 0.96);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1px solid rgba(249, 115, 22, 0.22);
+  border-radius: 22px;
+  box-shadow:
+    0 28px 90px rgba(220, 38, 38, 0.28),
+    0 8px 40px rgba(0, 0, 0, 0.75);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: #f8fafc;
+}
+
+/* Flowing Top 2px Laser Border */
+.lcb-window-border-anim {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #dc2626, #f97316, #fbbf24, #e11d48, #f97316, #dc2626);
+  background-size: 300% 100%;
+  animation: lcb-laser-flow 3.5s linear infinite;
+  z-index: 15;
+}
+
+/* Decorative Neural SVG & 18 Twinkling Stars */
+.lcb-neural-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.lcb-star {
+  position: absolute;
+  width: 2.5px;
+  height: 2.5px;
+  border-radius: 9999px;
+  background: #fbbf24;
+  box-shadow: 0 0 6px rgba(249, 115, 22, 0.8);
+  animation: lcb-star-twinkle 3.2s ease-in-out infinite;
+}
+
+/* Header */
+.lcb-header {
+  position: relative;
+  z-index: 5;
+  padding: 14px 16px 12px;
+  background: linear-gradient(180deg, rgba(220, 38, 38, 0.12) 0%, rgba(18, 6, 9, 0.65) 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.lcb-avatar-wrap {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
+
+.lcb-avatar-core {
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #dc2626, #f97316);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(220, 38, 38, 0.45);
+}
+
+.lcb-avatar-ring-1 {
+  position: absolute;
+  inset: -4px;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  border-top-color: rgba(249, 115, 22, 0.75);
+  border-right-color: rgba(220, 38, 38, 0.35);
+  animation: lcb-spin-cw 3.2s linear infinite;
+}
+
+.lcb-avatar-ring-2 {
+  position: absolute;
+  inset: -8px;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  border-bottom-color: rgba(251, 191, 36, 0.45);
+  animation: lcb-spin-ccw 5.2s linear infinite;
+}
+
+.lcb-avatar-status {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  background: #10b981;
+  border: 2px solid #0a0406;
+}
+
+.lcb-version-pill {
+  padding: 1px 6px;
+  border-radius: 9999px;
+  background: rgba(249, 115, 22, 0.16);
+  border: 1px solid rgba(249, 115, 22, 0.35);
+  color: #fdba74;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.lcb-header-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lcb-header-btn:hover {
+  background: rgba(249, 115, 22, 0.16);
+  border-color: rgba(249, 115, 22, 0.4);
+  color: #ffffff;
+}
+
+/* Capability Pills Bar */
+.lcb-cap-bar {
+  position: relative;
+  z-index: 5;
+  padding: 7px 12px;
+  background: rgba(18, 6, 9, 0.78);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.lcb-cap-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.lcb-cap-pill {
+  padding: 3px 8px;
+  border-radius: 9999px;
+  background: rgba(249, 115, 22, 0.08);
+  border: 1px solid rgba(249, 115, 22, 0.22);
+  color: #fdba74;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Messages Scroll Area */
+.lcb-messages {
+  position: relative;
+  z-index: 5;
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 14px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Message Bubbles */
+.lcb-bubble-bot {
+  align-self: flex-start;
+  max-width: 88%;
+  padding: 11px 13px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-left: 2px solid #f97316;
+  border-radius: 16px 16px 16px 3px;
+  color: #f1f5f9;
+  font-size: 12.5px;
+  line-height: 1.55;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.28);
+}
+
+.lcb-bubble-user {
+  align-self: flex-end;
+  max-width: 84%;
+  padding: 10px 13px;
+  background: linear-gradient(135deg, #dc2626 0%, #f97316 100%);
+  border-radius: 16px 16px 3px 16px;
+  color: #ffffff;
+  font-size: 12.5px;
+  line-height: 1.5;
+  box-shadow: 0 4px 22px rgba(220, 38, 38, 0.4);
+}
+
+.lcb-bold-highlight {
+  color: #fdba74;
+  font-weight: 700;
+}
+
+.lcb-inline-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin: 0 2px;
+  padding: 1px 7px;
+  border-radius: 6px;
+  background: rgba(249, 115, 22, 0.16);
+  border: 1px solid rgba(249, 115, 22, 0.38);
+  color: #fbbf24;
+  font-weight: 700;
+  font-size: 11.5px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lcb-inline-link:hover {
+  background: linear-gradient(135deg, #dc2626, #f97316);
+  color: #ffffff;
+  border-color: transparent;
+}
+
+/* Neural Typing Indicator */
+.lcb-typing-wrap {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 13px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(249, 115, 22, 0.2);
+  border-radius: 14px 14px 14px 3px;
+}
+
+.lcb-typing-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.lcb-typing-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #dc2626, #f97316);
+  animation: lcb-dot-bounce 1.25s infinite ease-in-out;
+}
+.lcb-typing-dot:nth-child(2) {
+  animation-delay: 0.16s;
+}
+.lcb-typing-dot:nth-child(3) {
+  animation-delay: 0.32s;
+}
+
+/* Voice Wave 5-Bar Indicator */
+.lcb-voice-preview {
+  position: relative;
+  z-index: 5;
+  margin: 0 12px 6px;
+  padding: 7px 11px;
+  border-radius: 12px;
+  background: rgba(220, 38, 38, 0.14);
+  border: 1px solid rgba(249, 115, 22, 0.38);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  color: #fdba74;
+}
+
+.lcb-voice-wave {
+  display: inline-flex;
+  align-items: center;
+  gap: 2.5px;
+  height: 14px;
+}
+
+.lcb-voice-bar {
+  width: 2.5px;
+  height: 13px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fbbf24, #f97316, #dc2626);
+  animation: lcb-wave-bar 0.75s ease-in-out infinite;
+}
+.lcb-voice-bar:nth-child(2) {
+  animation-delay: 0.12s;
+}
+.lcb-voice-bar:nth-child(3) {
+  animation-delay: 0.24s;
+}
+.lcb-voice-bar:nth-child(4) {
+  animation-delay: 0.15s;
+}
+.lcb-voice-bar:nth-child(5) {
+  animation-delay: 0.28s;
+}
+
+/* Quick Suggestion Chips Bar */
+.lcb-chips-row {
+  position: relative;
+  z-index: 5;
+  padding: 6px 12px 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+.lcb-chips-row::-webkit-scrollbar {
+  display: none;
+}
+
+.lcb-chip {
+  padding: 5px 11px;
+  border-radius: 9999px;
+  background: rgba(220, 38, 38, 0.08);
+  border: 1px solid rgba(249, 115, 22, 0.25);
+  color: #fdba74;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lcb-chip:hover {
+  transform: translateY(-1px);
+  background: rgba(249, 115, 22, 0.18);
+  border-color: rgba(249, 115, 22, 0.55);
+  color: #ffffff;
+}
+
+/* Input Bar */
+.lcb-input-area {
+  position: relative;
+  z-index: 5;
+  padding: 10px 12px 12px;
+  background: rgba(14, 5, 8, 0.92);
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.lcb-input-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 6px 5px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.lcb-input-row:focus-within {
+  border-color: rgba(249, 115, 22, 0.45);
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.12);
+}
+
+.lcb-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #f8fafc;
+  font-size: 12.5px;
+  min-width: 0;
+}
+
+.lcb-input::placeholder {
+  color: #64748b;
+}
+
+.lcb-mic-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: #cbd5e1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.lcb-mic-btn.is-listening {
+  background: rgba(220, 38, 38, 0.25);
+  border-color: #f97316;
+  color: #fbbf24;
+  box-shadow: 0 0 14px rgba(249, 115, 22, 0.45);
+}
+
+.lcb-send-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, #dc2626, #f97316);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.45);
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.lcb-send-btn:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.lcb-send-btn:not(:disabled):hover {
+  transform: translateY(-1px) scale(1.04);
+}
+
+/* Mobile Responsive Bottom-Sheet (max-width: 480px) */
+@media (max-width: 480px) {
+  .lcb-root {
+    bottom: 16px;
+    right: 16px;
+  }
+
+  .lcb-window {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 72vh;
+    border-radius: 22px 22px 0 0;
+    z-index: 9995;
+  }
+}

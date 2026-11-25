@@ -1,0 +1,7 @@
+{
+  "name": "@sombill/shared-utils",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Shared helpers (formatting, dates, csv, reports, POS rules) and test helpers (testing/)"
+}

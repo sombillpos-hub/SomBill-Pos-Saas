@@ -1,0 +1,102 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [main]
+    paths: ['backend/**', 'database/**', 'infrastructure/**', '.github/workflows/backend-ci.yml']
+  pull_request:
+    paths: ['backend/**', 'database/**', 'infrastructure/**', '.github/workflows/backend-ci.yml']
+
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: backend
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_HOST_AUTH_METHOD: trust }
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U postgres" --health-interval 5s --health-retries 20
+      redis:
+        image: redis:7
+        ports: ['6379:6379']
+        options: --health-cmd "redis-cli ping" --health-interval 5s --health-retries 20
+      rabbitmq:
+        image: rabbitmq:3.13
+        ports: ['5672:5672']
+        options: --health-cmd "rabbitmq-diagnostics -q ping" --health-interval 10s --health-retries 20
+    env:
+      TEST_DATABASE_ADMIN_URL: postgresql://postgres@127.0.0.1:5432/postgres
+      RABBITMQ_URL: amqp://guest:guest@127.0.0.1:5672
+      REDIS_URL: redis://127.0.0.1:6379
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { package_json_file: backend/package.json }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm, cache-dependency-path: backend/pnpm-lock.yaml }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format:check
+      - run: pnpm lint
+      - run: pnpm prisma:generate
+      - run: pnpm typecheck
+      - name: Migrations match the Prisma schemas (no drift)
+        run: |
+          for svc in identity organization; do
+            psql -h 127.0.0.1 -U postgres -c "CREATE DATABASE shadow_${svc}"
+          done
+          IDENTITY_DATABASE_URL="postgresql://postgres@127.0.0.1:5432/postgres" \
+          ORGANIZATION_DATABASE_URL="postgresql://postgres@127.0.0.1:5432/postgres" \
+          IDENTITY_SHADOW_DATABASE_URL="postgresql://postgres@127.0.0.1:5432/shadow_identity" \
+          ORGANIZATION_SHADOW_DATABASE_URL="postgresql://postgres@127.0.0.1:5432/shadow_organization" \
+            pnpm --filter @sombill/database db:check
+      - run: pnpm test
+      - run: pnpm build
+
+  legacy-supabase-db-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm install --prefix database/supabase
+      - run: npm test --prefix database/supabase
+      - name: 303 SQL assertions on PostgreSQL 16
+        run: sudo -u postgres env PGBIN=/usr/lib/postgresql/16/bin bash database/supabase/tests/run_db_tests.sh || (echo "::error::database tests failed" && exit 1)
+
+  docker-images:
+    runs-on: ubuntu-24.04
+    needs: verify
+    timeout-minutes: 20
+    strategy:
+      matrix:
+        image:
+          - { name: api-gateway, app: api-gateway }
+          - { name: main-api, app: main-api }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build ${{ matrix.image.name }}
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          file: infrastructure/docker/backend.Dockerfile
+          build-args: APP=${{ matrix.image.app }}
+          build-contexts: database=database
+          target: runtime
+          push: false
+          tags: sombill/${{ matrix.image.name }}:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

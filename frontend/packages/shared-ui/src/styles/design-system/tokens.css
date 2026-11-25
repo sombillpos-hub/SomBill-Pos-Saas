@@ -1,0 +1,56 @@
+/*
+ * SomBill design tokens ("Obsidian Ruby" system).
+ * These are plain CSS variables, so loading them changes nothing by itself. They only take effect where a
+ * theme (see obsidian.css) or a component uses them.
+ */
+:root {
+  /* Brand glow & identity */
+  --sb-brand-red: #dc2626;
+  --sb-brand-orange: #f97316;
+  --sb-brand-amber: #fbbf24;
+  --sb-brand-white: #f8fafc;
+
+  /* Surfaces */
+  --sb-bg-obsidian: #080305;
+  --sb-bg-surface-glass: rgba(255, 255, 255, 0.025);
+  --sb-bg-surface-elevated: rgba(13, 6, 8, 0.72);
+  --sb-border-subtle: rgba(255, 255, 255, 0.06);
+  --sb-border-brand-glow: rgba(220, 38, 38, 0.22);
+  --sb-border-brand-active: rgba(249, 115, 22, 0.45);
+
+  /* Gradients */
+  --sb-gradient-flame: linear-gradient(135deg, #dc2626 0%, #f97316 50%, #fbbf24 100%);
+  --sb-gradient-flame-hover: linear-gradient(135deg, #ef4444 0%, #fb923c 50%, #fcd34d 100%);
+  --sb-gradient-text: linear-gradient(135deg, #ffffff 20%, #f97316 70%, #fbbf24 100%);
+  --sb-gradient-cta: linear-gradient(135deg, #dc2626 0%, #f97316 100%);
+
+  /* Typography (Fontsource variable families, with the plain names as fallbacks) */
+  --sb-font-main: 'Outfit Variable', 'Outfit', -apple-system, 'Segoe UI', sans-serif;
+  --sb-font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Text levels on dark surfaces (all checked for contrast in the design-system tests) */
+  --sb-text-1: #f8fafc;
+  --sb-text-2: rgba(248, 250, 252, 0.88);
+  --sb-text-3: rgba(248, 250, 252, 0.68);
+  --sb-text-4: rgba(248, 250, 252, 0.56);
+  --sb-text-5: rgba(248, 250, 252, 0.5);
+
+  /* Status colours on dark */
+  --sb-ok: #34d399;
+  --sb-warn: #f59e0b;
+  --sb-danger: #f87171;
+  --sb-info: #38bdf8;
+  --sb-violet: #a78bfa;
+
+  /* Shell metrics */
+  --sb-sidebar-width: 272px;
+  --sb-sidebar-width-collapsed: 84px;
+  --sb-topbar-height: 68px;
+  --sb-radius-card: 24px;
+  --sb-radius-control: 13px;
+  --sb-transition-smooth: 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Chart colours: light defaults for print, overridden by the obsidian theme on screen */
+  --sb-chart-grid: #e5e7eb;
+  --sb-chart-axis: #64748b;
+}

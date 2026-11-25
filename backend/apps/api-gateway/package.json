@@ -1,0 +1,43 @@
+{
+  "name": "@sombill/api-gateway",
+  "private": true,
+  "version": "0.2.0",
+  "type": "module",
+  "description": "Public entry point: security headers, CORS, Redis-backed rate limiting, JWT pre-verification, routing to the main API, Swagger docs",
+  "scripts": {
+    "dev": "node --env-file-if-exists=.env --conditions=source --import tsx --watch src/server.ts",
+    "start": "node dist/server.js",
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@sombill/shared-types": "workspace:*",
+    "@sombill/shared-utils": "workspace:*",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "cors": "^2.8.5",
+    "http-proxy-middleware": "^3.0.5",
+    "ioredis": "^5.8.2",
+    "swagger-ui-express": "^5.0.1",
+    "pino-http": "^11.0.0",
+    "zod": "^4.1.12",
+    "@sombill/logger": "workspace:*",
+    "@sombill/authentication": "workspace:*",
+    "@sombill/cache": "workspace:*"
+  },
+  "devDependencies": {
+    "@sombill/testing": "workspace:*",
+    "@types/express": "^5.0.5",
+    "@types/cors": "^2.8.19",
+    "@types/swagger-ui-express": "^4.1.8",
+    "supertest": "^7.1.4",
+    "@types/supertest": "^6.0.3"
+  },
+  "exports": {
+    "./runtime": {
+      "source": "./src/config/runtime.ts",
+      "default": "./dist/config/runtime.js"
+    }
+  }
+}

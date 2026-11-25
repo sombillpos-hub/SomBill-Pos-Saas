@@ -1,0 +1,13 @@
+# SomBill - root entry point for the Docker stack.
+# The stack itself lives in infrastructure/deployment/development/docker-compose.yml; this file only includes it,
+# so `docker compose up` works from the project root. Needs Docker Compose 2.20 or newer.
+#
+#   1. bash scripts/generate-jwt-keys.sh
+#   2. cp infrastructure/deployment/development/.env.example infrastructure/deployment/development/.env   (then set the passwords)
+#   3. docker compose up --build
+# API: http://localhost/api/v1   Docs: http://localhost/api/docs   RabbitMQ UI: http://localhost:15672
+name: sombill
+
+include:
+  - path: infrastructure/deployment/development/docker-compose.yml
+    env_file: infrastructure/deployment/development/.env

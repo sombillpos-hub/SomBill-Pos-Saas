@@ -1,0 +1,1014 @@
+/*
+ * POS terminal skin (Cashier today, Waiter later): 54px status topbar, bottom status bar, menu tiles, ticket panel,
+ * totals, payment buttons. Both themes use the same rules: only the --pos-* variables differ.
+ * Active under .pos-root, i.e. only inside the themed POS shell, and only on screen (printing is untouched).
+ */
+@media screen {
+  .pos-root {
+    --sb-pos-topbar: var(--sb-topbar-height);
+    --sb-pos-statusbar: 34px;
+  }
+
+  /* ---- Variables: light (default) -------------------------------------------------------------------------- */
+  [data-sb-theme='light'] .pos-root {
+    --pos-text: #0f172a;
+    --pos-dim: #475569;
+    --pos-muted: #64748b;
+    --pos-price: #b45309;
+    --pos-price-glow: none;
+    --pos-tile-bg: #ffffff;
+    --pos-tile-border: rgba(15, 23, 42, 0.1);
+    --pos-tile-hover-border: rgba(249, 115, 22, 0.55);
+    --pos-tile-hover-shadow: 0 10px 24px rgba(15, 23, 42, 0.12), 0 0 16px rgba(220, 38, 38, 0.08);
+    --pos-beam: rgba(249, 115, 22, 0.16);
+    --pos-chip-bg: #ffffff;
+    --pos-chip-border: rgba(15, 23, 42, 0.14);
+    --pos-chip-text: #475569;
+    --pos-search-bg: #ffffff;
+    --pos-search-border: rgba(220, 38, 38, 0.22);
+    --pos-panel-bg: rgba(255, 255, 255, 0.94);
+    --pos-panel-edge: rgba(220, 38, 38, 0.18);
+    --pos-tabs-bg: #f1f5f9;
+    --pos-row-hover: rgba(220, 38, 38, 0.05);
+    --pos-row-border: rgba(15, 23, 42, 0.1);
+    --pos-totals-bg: #f8fafc;
+    --pos-totals-border: rgba(15, 23, 42, 0.1);
+    --pos-grand-bg: linear-gradient(135deg, rgba(220, 38, 38, 0.08), rgba(249, 115, 22, 0.05));
+    --pos-grand-border: rgba(220, 38, 38, 0.22);
+    --pos-grand-text: #0f172a;
+    --pos-grand-glow: none;
+    --pos-amber-pill-bg: #fffbeb;
+    --pos-amber-pill-border: rgba(180, 83, 9, 0.35);
+    --pos-amber-pill-text: #92400e;
+    --pos-emerald-text: #047857;
+    --pos-emerald-glow: none;
+    --pos-statusbar-bg: rgba(255, 255, 255, 0.96);
+    --pos-statusbar-text: #64748b;
+    --pos-statusbar-border: rgba(15, 23, 42, 0.08);
+    --pos-mobile-bar: rgba(255, 255, 255, 0.96);
+    --pos-mobile-bar-border: rgba(15, 23, 42, 0.1);
+  }
+
+  /* ---- Variables: dark (Obsidian Ruby, from the Cashier brief) --------------------------------------------- */
+  [data-sb-theme='obsidian'] .pos-root {
+    --pos-text: #f8fafc;
+    --pos-dim: rgba(248, 250, 252, 0.72);
+    --pos-muted: rgba(248, 250, 252, 0.58);
+    --pos-price: #fbbf24;
+    --pos-price-glow: 0 0 10px rgba(251, 191, 36, 0.3);
+    --pos-tile-bg: rgba(255, 255, 255, 0.025);
+    --pos-tile-border: rgba(255, 255, 255, 0.07);
+    --pos-tile-hover-border: rgba(249, 115, 22, 0.4);
+    --pos-tile-hover-shadow: 0 10px 24px rgba(0, 0, 0, 0.4), 0 0 16px rgba(220, 38, 38, 0.15);
+    --pos-beam: rgba(255, 255, 255, 0.12);
+    --pos-chip-bg: rgba(255, 255, 255, 0.04);
+    --pos-chip-border: rgba(255, 255, 255, 0.1);
+    --pos-chip-text: rgba(248, 250, 252, 0.7);
+    --pos-search-bg: rgba(255, 255, 255, 0.035);
+    --pos-search-border: rgba(220, 38, 38, 0.2);
+    --pos-panel-bg: rgba(10, 4, 7, 0.88);
+    --pos-panel-edge: rgba(220, 38, 38, 0.15);
+    --pos-tabs-bg: rgba(255, 255, 255, 0.04);
+    --pos-row-hover: rgba(220, 38, 38, 0.05);
+    --pos-row-border: rgba(255, 255, 255, 0.07);
+    --pos-totals-bg: rgba(255, 255, 255, 0.02);
+    --pos-totals-border: rgba(255, 255, 255, 0.07);
+    --pos-grand-bg: linear-gradient(135deg, rgba(220, 38, 38, 0.16), rgba(249, 115, 22, 0.07));
+    --pos-grand-border: rgba(220, 38, 38, 0.3);
+    --pos-grand-text: #ffffff;
+    --pos-grand-glow: 0 0 36px rgba(220, 38, 38, 0.22);
+    --pos-amber-pill-bg: rgba(251, 191, 36, 0.12);
+    --pos-amber-pill-border: rgba(251, 191, 36, 0.4);
+    --pos-amber-pill-text: #fbbf24;
+    --pos-emerald-text: #34d399;
+    --pos-emerald-glow: 0 0 22px rgba(16, 185, 129, 0.5);
+    --pos-statusbar-bg: rgba(8, 3, 5, 0.98);
+    --pos-statusbar-text: rgba(248, 250, 252, 0.58);
+    --pos-statusbar-border: rgba(255, 255, 255, 0.06);
+    --pos-mobile-bar: rgba(10, 4, 7, 0.94);
+    --pos-mobile-bar-border: rgba(220, 38, 38, 0.2);
+  }
+
+  /* ---- Topbar (unified 68px 2026 glass strip matching Manager ShellTopbar) -------------------------------- */
+  .sb-topbar--pos {
+    height: var(--sb-pos-topbar);
+    gap: 12px;
+  }
+  .sb-pos-ident {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .sb-pos-title {
+    margin: 0;
+    font-size: 0.92rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    color: #0f172a;
+  }
+  [data-sb-theme='obsidian'] .sb-pos-title {
+    color: #fff;
+  }
+  .sb-pos-place {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    max-width: 15rem;
+    height: 30px;
+    padding: 0 11px;
+    border-radius: 10px;
+    font-size: 0.76rem;
+    font-weight: 600;
+    background: rgba(15, 23, 42, 0.045);
+    border: 1px solid rgba(15, 23, 42, 0.09);
+    color: #475569;
+  }
+  [data-sb-theme='obsidian'] .sb-pos-place {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: rgba(248, 250, 252, 0.75);
+  }
+  @media (min-width: 1180px) {
+    .sb-pos-place {
+      display: inline-flex;
+    }
+  }
+  .sb-pos-clock {
+    display: none;
+    flex: 0 0 auto;
+  }
+  @media (min-width: 1100px) {
+    .sb-pos-clock {
+      display: inline-flex;
+    }
+    .sb-pos-clock .sb-clock {
+      display: inline-flex;
+    }
+  }
+  .sb-clock-date {
+    font-family: var(--sb-font-main);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #64748b;
+    text-shadow: none;
+  }
+  [data-sb-theme='obsidian'] .sb-clock-date {
+    color: rgba(248, 250, 252, 0.62);
+  }
+  .sb-pos-right {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+  .sb-pos-right a.sb-icon-btn {
+    text-decoration: none;
+  }
+
+  /* Shift chip */
+  .sb-shift-pill {
+    display: none;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 7px;
+    height: 36px;
+    padding: 0 12px;
+    border-radius: 11px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    white-space: nowrap;
+    text-decoration: none;
+    border: 1px solid;
+    transition:
+      filter 0.2s ease,
+      transform 0.2s ease;
+  }
+  @media (min-width: 900px) {
+    .sb-shift-pill {
+      display: inline-flex;
+    }
+  }
+  .sb-shift-pill:hover {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+  }
+  [data-sb-theme='light'] .sb-shift-pill[data-state='open'] {
+    background: rgba(16, 185, 129, 0.1);
+    border-color: rgba(5, 150, 105, 0.3);
+    color: #047857;
+  }
+  [data-sb-theme='light'] .sb-shift-pill[data-state='closed'] {
+    background: rgba(245, 158, 11, 0.12);
+    border-color: rgba(180, 83, 9, 0.3);
+    color: #92400e;
+  }
+  [data-sb-theme='light'] .sb-shift-pill[data-state='loading'] {
+    background: #f1f5f9;
+    border-color: rgba(15, 23, 42, 0.12);
+    color: #475569;
+  }
+  [data-sb-theme='obsidian'] .sb-shift-pill[data-state='open'] {
+    background: rgba(16, 185, 129, 0.1);
+    border-color: rgba(16, 185, 129, 0.25);
+    color: #34d399;
+  }
+  [data-sb-theme='obsidian'] .sb-shift-pill[data-state='closed'] {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.3);
+    color: #fbbf24;
+  }
+  [data-sb-theme='obsidian'] .sb-shift-pill[data-state='loading'] {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: rgba(248, 250, 252, 0.7);
+  }
+
+  /* Sidebar count badge */
+  .sb-nav-badge {
+    margin-left: auto;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: #dc2626;
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 800;
+    box-shadow: 0 0 10px rgba(220, 38, 38, 0.45);
+  }
+
+  /* ---- Bottom status bar (32px) ---------------------------------------------------------------------------- */
+  .sb-statusbar {
+    display: none;
+    position: sticky;
+    bottom: 0;
+    z-index: 60;
+    height: var(--sb-pos-statusbar);
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 0 16px;
+    font-family: var(--sb-font-mono);
+    font-size: 0.72rem;
+    background: var(--pos-statusbar-bg, rgba(255, 255, 255, 0.96));
+    color: var(--pos-statusbar-text, #64748b);
+    border-top: 1px solid var(--pos-statusbar-border, rgba(15, 23, 42, 0.08));
+  }
+  @media (min-width: 1024px) {
+    .sb-statusbar {
+      display: flex;
+    }
+  }
+  .sb-statusbar > div {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .sb-statusbar-center {
+    display: none;
+  }
+  @media (min-width: 1280px) {
+    .sb-statusbar-center {
+      display: block;
+    }
+  }
+  .sb-statusbar-right {
+    margin-left: auto;
+  }
+
+  /* ---- Menu catalog ---------------------------------------------------------------------------------------- */
+  .pos-root .pos-search .input {
+    border-radius: 16px;
+    background: var(--pos-search-bg);
+    border: 1px solid var(--pos-search-border);
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s;
+  }
+  .pos-root .pos-search .input:focus {
+    border-color: #f97316;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+  }
+
+  .pos-root [data-sb='cat-chip'] {
+    background: var(--pos-chip-bg);
+    border: 1px solid var(--pos-chip-border);
+    color: var(--pos-chip-text);
+    transition:
+      transform 0.15s,
+      box-shadow 0.2s,
+      border-color 0.2s;
+  }
+  .pos-root [data-sb='cat-chip']:hover {
+    border-color: rgba(249, 115, 22, 0.5);
+  }
+  .pos-root [data-sb='cat-chip']:active {
+    transform: scale(0.95);
+  }
+  .pos-root [data-sb='cat-chip'][aria-selected='true'] {
+    background: linear-gradient(135deg, #dc2626, #f97316);
+    border-color: transparent;
+    color: #fff;
+    font-weight: 700;
+    box-shadow: 0 4px 16px rgba(220, 38, 38, 0.35);
+  }
+
+  [data-sb-theme] .pos-root [data-sb='product-card'] {
+    position: relative;
+    overflow: hidden;
+    border-radius: 18px;
+    background: var(--pos-tile-bg);
+    border: 1px solid var(--pos-tile-border);
+    transition:
+      transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+      border-color 0.22s,
+      box-shadow 0.22s;
+  }
+  /* Diagonal light beam that sweeps across the tile on hover */
+  [data-sb-theme] .pos-root [data-sb='product-card']::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -60%;
+    width: 40%;
+    background: linear-gradient(90deg, transparent, var(--pos-beam), transparent);
+    transform: skewX(-25deg);
+    transition: left 0.6s ease;
+    pointer-events: none;
+  }
+  [data-sb-theme] .pos-root [data-sb='product-card']:hover:not(:disabled) {
+    transform: translateY(-3px) scale(1.02);
+    border-color: var(--pos-tile-hover-border);
+    box-shadow: var(--pos-tile-hover-shadow);
+  }
+  [data-sb-theme] .pos-root [data-sb='product-card']:hover:not(:disabled)::before {
+    left: 130%;
+  }
+  [data-sb-theme] .pos-root [data-sb='product-card']:active:not(:disabled) {
+    transform: scale(0.96);
+    transition-duration: 0.08s;
+  }
+  .pos-root [data-sb='product-card'] [data-sb='price'] {
+    color: var(--pos-price);
+    font-family: var(--sb-font-mono);
+    font-weight: 800;
+    text-shadow: var(--pos-price-glow);
+  }
+  .pos-root [data-sb='qty-badge'] {
+    background: linear-gradient(135deg, #dc2626, #f97316);
+    box-shadow: 0 0 12px rgba(220, 38, 38, 0.5);
+  }
+
+  /* ---- Ticket panel ---------------------------------------------------------------------------------------- */
+  [data-sb-theme] .pos-root .pos-ticket {
+    background: var(--pos-panel-bg);
+    border-color: var(--pos-panel-edge);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+  }
+  .pos-root [data-sb='dining-tabs'] {
+    background: var(--pos-tabs-bg);
+    border: 1px solid var(--pos-row-border);
+    border-radius: 16px;
+  }
+  .pos-root [data-sb='dining-tab'] {
+    border-radius: 12px;
+    background: transparent;
+    color: var(--pos-dim);
+    box-shadow: none;
+    transition:
+      background 0.2s,
+      color 0.2s,
+      box-shadow 0.2s,
+      transform 0.15s;
+  }
+  .pos-root [data-sb='dining-tab']:active {
+    transform: scale(0.96);
+  }
+  .pos-root [data-sb='dining-tab'][aria-checked='true'] {
+    background: linear-gradient(135deg, #dc2626, #f97316);
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(220, 38, 38, 0.35);
+  }
+  .pos-root [data-sb='table-pill'] {
+    display: inline-flex;
+    align-items: center;
+    height: 28px;
+    padding: 0 12px;
+    border-radius: 999px;
+    font-family: var(--sb-font-mono);
+    font-size: 0.78rem;
+    font-weight: 800;
+    white-space: nowrap;
+    background: var(--pos-amber-pill-bg);
+    border: 1px solid var(--pos-amber-pill-border);
+    color: var(--pos-amber-pill-text);
+    box-shadow: 0 0 16px rgba(251, 191, 36, 0.18);
+  }
+  .pos-root [data-sb='ticket-row'] {
+    border-radius: 16px;
+    border-color: var(--pos-row-border);
+    transition:
+      background 0.2s,
+      border-color 0.2s;
+  }
+  .pos-root [data-sb='ticket-row']:hover {
+    background: var(--pos-row-hover);
+    border-color: rgba(249, 115, 22, 0.3);
+  }
+  .pos-root [data-sb='ticket-row'] .tabular-nums {
+    font-family: var(--sb-font-mono);
+  }
+  .pos-root [data-sb='stepper'] {
+    border-radius: 12px;
+    border: 1px solid rgba(249, 115, 22, 0.45);
+    background: var(--pos-chip-bg);
+    color: var(--pos-text);
+    transition:
+      background 0.15s,
+      transform 0.15s;
+  }
+  .pos-root [data-sb='stepper']:hover:not(:disabled) {
+    background: rgba(220, 38, 38, 0.1);
+  }
+  .pos-root [data-sb='stepper']:active:not(:disabled) {
+    transform: scale(0.92);
+  }
+  .pos-root [data-sb='row-remove']:hover {
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+  }
+
+  /* ---- Totals ---------------------------------------------------------------------------------------------- */
+  [data-sb-theme] .pos-root [data-sb='totals'] {
+    margin: 0 12px 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--pos-totals-border);
+    border-radius: 20px;
+    background: var(--pos-totals-bg);
+  }
+  .pos-root [data-sb='totals'] dd {
+    font-family: var(--sb-font-mono);
+  }
+  .pos-root [data-sb='grand-total'] {
+    align-items: center;
+    margin-top: 6px;
+    padding: 8px 14px;
+    border: 1px solid var(--pos-grand-border);
+    border-radius: 16px;
+    background: var(--pos-grand-bg);
+    box-shadow: var(--pos-grand-glow);
+    color: var(--pos-grand-text);
+  }
+  .pos-root [data-sb='grand-total'] dt {
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--pos-dim);
+  }
+  .pos-root [data-sb='grand-total'] dd {
+    font-size: 1.7rem;
+    font-weight: 900;
+    line-height: 1.1;
+    color: var(--pos-grand-text);
+  }
+  .pos-root [data-sb='charge'] {
+    box-shadow: 0 8px 24px rgba(249, 115, 22, 0.35);
+  }
+  [data-sb-theme] .pos-root [data-sb='mobile-bar'] {
+    background: var(--pos-mobile-bar);
+    border-top-color: var(--pos-mobile-bar-border);
+  }
+
+  /* ---- Payment buttons ------------------------------------------------------------------------------------- */
+  [data-sb-theme] .pos-root [data-sb='pay-method'] {
+    color: #fff;
+    border: 1px solid transparent;
+    border-radius: 16px;
+    padding-inline: 8px;
+    gap: 6px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    line-height: 1.15;
+    text-align: center;
+    transition:
+      transform 0.22s ease,
+      box-shadow 0.22s ease,
+      filter 0.22s ease;
+  }
+  [data-sb-theme] .pos-root [data-sb='pay-method'] svg {
+    color: #fff;
+  }
+  [data-sb-theme] .pos-root [data-sb='pay-method']:hover:not(:disabled) {
+    transform: translateY(-2px) scale(1.02);
+    filter: brightness(1.1);
+  }
+  [data-sb-theme] .pos-root [data-sb='pay-method']:active:not(:disabled) {
+    transform: scale(0.96);
+    transition-duration: 0.08s;
+  }
+  /* Deep gradient stops keep white labels legible (the brief's lighter stops are below 3:1 against white) */
+  [data-sb-theme] .pos-root [data-sb='pay-method'][data-method='zaad'] {
+    background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+    border-color: rgba(220, 38, 38, 0.5);
+    box-shadow: 0 8px 24px rgba(220, 38, 38, 0.35);
+  }
+  [data-sb-theme] .pos-root [data-sb='pay-method'][data-method='evc_plus'] {
+    background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+    border-color: rgba(249, 115, 22, 0.5);
+    box-shadow: 0 8px 24px rgba(249, 115, 22, 0.35);
+  }
+  [data-sb-theme] .pos-root [data-sb='pay-method'][data-method='cash'] {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    border-color: rgba(16, 185, 129, 0.5);
+    box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3);
+  }
+  [data-sb-theme] .pos-root [data-sb='pay-method'][data-method='card'] {
+    background: linear-gradient(135deg, #475569 0%, #1e293b 100%);
+    border-color: rgba(148, 163, 184, 0.45);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.3);
+  }
+  [data-sb-theme] .pos-root [data-sb='pay-method'][data-method='somtel_money'] {
+    background: linear-gradient(135deg, #0d9488 0%, #115e59 100%);
+    border-color: rgba(20, 184, 166, 0.5);
+    box-shadow: 0 8px 24px rgba(20, 184, 166, 0.3);
+  }
+  [data-sb-theme] .pos-root [data-sb='pay-method'][data-method='zaad']:hover:not(:disabled) {
+    box-shadow: 0 12px 32px rgba(220, 38, 38, 0.55);
+  }
+  [data-sb-theme] .pos-root [data-sb='pay-method'][data-method='evc_plus']:hover:not(:disabled) {
+    box-shadow: 0 12px 32px rgba(249, 115, 22, 0.55);
+  }
+  [data-sb-theme] .pos-root [data-sb='pay-method'][data-method='cash']:hover:not(:disabled) {
+    box-shadow: 0 12px 32px rgba(16, 185, 129, 0.5);
+  }
+
+  .pos-root [data-sb='pay-summary'] dd,
+  .pos-root [data-sb='pay-totals'] .tabular-nums {
+    font-family: var(--sb-font-mono);
+  }
+  [data-sb-theme] .pos-root [data-sb='pay-summary'],
+  [data-sb-theme] .pos-root [data-sb='pay-totals'] {
+    background: var(--pos-totals-bg);
+    border: 1px solid var(--pos-totals-border);
+    border-radius: 20px;
+  }
+  [data-sb-theme] .pos-root [data-sb='pay-line'] {
+    border-radius: 18px;
+  }
+  .pos-root [data-sb='quick-bill'] {
+    height: 42px;
+    border-radius: 999px;
+    border: 1px solid rgba(249, 115, 22, 0.45);
+    background: var(--pos-chip-bg);
+    color: var(--pos-text);
+    font-family: var(--sb-font-mono);
+    transition:
+      transform 0.15s,
+      background 0.15s;
+  }
+  .pos-root [data-sb='quick-bill']:hover {
+    background: rgba(220, 38, 38, 0.08);
+  }
+  .pos-root [data-sb='quick-bill']:active {
+    transform: scale(0.92);
+  }
+  .pos-root [data-sb='change-due'] {
+    color: var(--pos-emerald-text);
+    font-family: var(--sb-font-mono);
+    font-size: 2.2rem;
+    font-weight: 900;
+    line-height: 1.1;
+    text-shadow: var(--pos-emerald-glow);
+  }
+  [data-sb-theme='obsidian'] .pos-root [data-sb='paid-banner'] {
+    border-color: rgba(16, 185, 129, 0.35);
+    box-shadow: 0 0 32px rgba(16, 185, 129, 0.12);
+  }
+
+  /* ---- The on-screen receipt preview is paper: it stays white with black ink in the dark theme ---------------- */
+  [data-sb-theme='obsidian'] .receipt {
+    background: #ffffff;
+    color: #000000;
+    box-shadow: 0 10px 34px rgba(0, 0, 0, 0.55);
+  }
+  [data-sb-theme='obsidian'] .receipt * {
+    color: inherit;
+    border-color: #000000;
+  }
+
+  /* Validation state of a payment line (empty amount, missing reference) on dark */
+  [data-sb-theme='obsidian'] .pos-root [data-sb='pay-line'][class*='border-red'] {
+    background: rgba(239, 68, 68, 0.07);
+    border-color: rgba(239, 68, 68, 0.4);
+  }
+
+  /* ================================================================================================================
+     Waiter (phones and portrait tablets first): 56px topbar, floating dock, table cards, kitchen board
+     ================================================================================================================ */
+  @media (max-width: 1023px) {
+    .pos-root[data-dock] {
+      --sb-pos-topbar: 56px;
+    }
+    .pos-root[data-dock] .sb-topbar--pos .sb-icon-btn {
+      width: 44px;
+      height: 44px;
+    }
+  }
+  .pos-root[data-dock] .sb-pos-clock {
+    display: block;
+  }
+  .pos-root[data-dock] .sb-pos-clock .sb-clock {
+    font-size: 0.85rem;
+  }
+  .pos-root[data-dock] .sb-clock-date {
+    display: none;
+  }
+  @media (min-width: 768px) {
+    .pos-root[data-dock] .sb-pos-clock .sb-clock {
+      font-size: 1.2rem;
+    }
+    .pos-root[data-dock] .sb-clock-date {
+      display: block;
+    }
+  }
+  /* Micro connection beacon on small screens: only the pulsing dot is drawn, the label stays for screen readers */
+  @media (max-width: 899px) {
+    .pos-root[data-dock] .sb-conn {
+      display: inline-flex;
+      gap: 0;
+      padding: 0 11px;
+      font-size: 0;
+    }
+  }
+  @media (max-width: 1023px) {
+    .pos-root[data-dock] .sb-menu-btn {
+      display: none;
+    }
+    .pos-root[data-dock] main {
+      padding-bottom: 108px;
+    }
+    .pos-root[data-dock] [data-sb='mobile-bar'] {
+      bottom: 92px;
+      left: 14px;
+      right: 14px;
+      border: 1px solid var(--pos-mobile-bar-border);
+      border-radius: 22px;
+    }
+  }
+  @media (max-width: 479px) {
+    .pos-root[data-dock] .sb-pos-ident {
+      gap: 6px;
+    }
+  }
+
+  /* ---- Floating bottom dock ------------------------------------------------------------------------------- */
+  .sb-dock {
+    position: fixed;
+    z-index: 100;
+    bottom: 12px;
+    left: 14px;
+    right: 14px;
+    height: 68px;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 10px;
+    border-radius: 26px;
+    -webkit-tap-highlight-color: transparent;
+    backdrop-filter: blur(35px) saturate(200%);
+    -webkit-backdrop-filter: blur(35px) saturate(200%);
+  }
+  @media (min-width: 1024px) {
+    .sb-dock {
+      display: none;
+    }
+  }
+  [data-sb-theme='light'] .sb-dock {
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(220, 38, 38, 0.2);
+    box-shadow:
+      0 14px 36px rgba(15, 23, 42, 0.2),
+      0 0 18px rgba(220, 38, 38, 0.08);
+  }
+  [data-sb-theme='obsidian'] .sb-dock {
+    background: rgba(13, 5, 8, 0.88);
+    border: 1px solid rgba(220, 38, 38, 0.25);
+    box-shadow:
+      0 16px 40px rgba(0, 0, 0, 0.75),
+      0 0 20px rgba(220, 38, 38, 0.12);
+  }
+  .sb-dock-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-width: 52px;
+    min-height: 52px;
+    padding: 4px 6px;
+    border: 0;
+    border-radius: 16px;
+    background: transparent;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+      color 0.2s,
+      transform 0.15s;
+  }
+  [data-sb-theme='light'] .sb-dock-item {
+    color: #475569;
+  }
+  [data-sb-theme='obsidian'] .sb-dock-item {
+    color: rgba(248, 250, 252, 0.66);
+  }
+  .sb-dock-item:active {
+    transform: scale(0.92);
+  }
+  .sb-dock-item svg {
+    transition:
+      transform 0.2s,
+      filter 0.2s;
+  }
+  [data-sb-theme='light'] .sb-dock-item.active {
+    color: #c2410c;
+  }
+  [data-sb-theme='obsidian'] .sb-dock-item.active {
+    color: #f97316;
+  }
+  .sb-dock-item.active svg {
+    transform: scale(1.15);
+    filter: drop-shadow(0 0 8px rgba(249, 115, 22, 0.6));
+  }
+  .sb-dock-fab {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 54px;
+    height: 54px;
+    margin-top: -24px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #dc2626 0%, #f97316 100%);
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    color: #fff;
+    box-shadow:
+      0 8px 24px rgba(220, 38, 38, 0.5),
+      0 0 16px rgba(249, 115, 22, 0.3);
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .sb-dock-fab:active {
+    transform: scale(0.92);
+  }
+  .sb-dock-fab-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: #fbbf24;
+    color: #1f1300;
+    font-size: 0.7rem;
+    font-weight: 800;
+    box-shadow: 0 0 10px rgba(251, 191, 36, 0.6);
+  }
+
+  /* ---- Offline banner -------------------------------------------------------------------------------------- */
+  .sb-offline-banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 16px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-align: center;
+    color: #fff;
+    background: rgba(185, 28, 28, 0.96);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    animation: sb-fade-up 0.3s var(--sb-transition-smooth) both;
+  }
+
+  /* ---- Status pills above the table grid ------------------------------------------------------------------- */
+  [data-sb-theme] .pos-root [data-sb='status-pill'] {
+    height: 36px;
+    padding: 0 14px;
+    background: var(--pos-chip-bg);
+    border: 1px solid var(--pos-chip-border);
+    color: var(--pos-chip-text);
+  }
+  .pos-root [data-sb='status-pill'] .tabular-nums {
+    font-family: var(--sb-font-mono);
+    color: var(--pos-text);
+  }
+  .pos-root [data-sb='status-pill']::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--dot, #94a3b8);
+    box-shadow: 0 0 8px var(--dot, transparent);
+  }
+  .pos-root [data-sb='status-pill'][data-state='available'] {
+    --dot: #10b981;
+  }
+  .pos-root [data-sb='status-pill'][data-state='occupied'] {
+    --dot: #f97316;
+  }
+  .pos-root [data-sb='status-pill'][data-state='bill_requested'] {
+    --dot: #fbbf24;
+  }
+  .pos-root [data-sb='status-pill'][data-state='payment_pending'] {
+    --dot: #ef4444;
+  }
+
+  /* ---- Table cards ----------------------------------------------------------------------------------------- */
+  [data-sb-theme] .pos-root [data-sb='table-card'] {
+    position: relative;
+    overflow: hidden;
+    padding: 16px;
+    border-width: 1px;
+    border-radius: 20px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    transition:
+      transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 0.2s,
+      border-color 0.2s;
+  }
+  [data-sb-theme] .pos-root [data-sb='table-card'][data-shape='round'] {
+    border-radius: 30px;
+  }
+  .pos-root [data-sb='table-card']:hover {
+    transform: translateY(-2px);
+  }
+  .pos-root [data-sb='table-card']:active {
+    transform: scale(0.97);
+    transition-duration: 0.08s;
+  }
+  .pos-root [data-sb='table-no'] {
+    font-family: var(--sb-font-mono);
+    font-weight: 800;
+    color: var(--pos-text);
+  }
+  .pos-root [data-sb='table-timer'] {
+    font-family: var(--sb-font-mono);
+    color: var(--pos-price);
+    text-shadow: var(--pos-price-glow);
+  }
+  .pos-root [data-sb='table-total'] {
+    font-family: var(--sb-font-mono);
+  }
+
+  [data-sb-theme='light'] .pos-root [data-sb='table-card'][data-state='available'] {
+    background: rgba(16, 185, 129, 0.07);
+    border-color: rgba(5, 150, 105, 0.35);
+  }
+  [data-sb-theme='light'] .pos-root [data-sb='table-card'][data-state='occupied'] {
+    background: linear-gradient(145deg, rgba(220, 38, 38, 0.07), #ffffff);
+    border-color: rgba(220, 38, 38, 0.35);
+  }
+  [data-sb-theme='light'] .pos-root [data-sb='table-card'][data-state='bill_requested'] {
+    background: rgba(251, 191, 36, 0.14);
+    border: 2px solid #f59e0b;
+  }
+  [data-sb-theme='light'] .pos-root [data-sb='table-card'][data-state='payment_pending'] {
+    background: rgba(220, 38, 38, 0.09);
+    border-color: rgba(220, 38, 38, 0.5);
+  }
+  [data-sb-theme='light'] .pos-root [data-sb='table-card'][data-state='cleaning'] {
+    background: rgba(14, 165, 233, 0.07);
+    border-color: rgba(2, 132, 199, 0.35);
+  }
+  [data-sb-theme='obsidian'] .pos-root [data-sb='table-card'][data-state='available'] {
+    background: rgba(16, 185, 129, 0.04);
+    border-color: rgba(16, 185, 129, 0.25);
+  }
+  [data-sb-theme='obsidian'] .pos-root [data-sb='table-card'][data-state='occupied'] {
+    background: linear-gradient(145deg, rgba(220, 38, 38, 0.08), rgba(15, 6, 9, 0.7));
+    border-color: rgba(220, 38, 38, 0.35);
+  }
+  [data-sb-theme='obsidian'] .pos-root [data-sb='table-card'][data-state='bill_requested'] {
+    background: rgba(251, 191, 36, 0.07);
+    border: 2px solid #fbbf24;
+  }
+  [data-sb-theme='obsidian'] .pos-root [data-sb='table-card'][data-state='payment_pending'] {
+    background: rgba(220, 38, 38, 0.12);
+    border-color: rgba(239, 68, 68, 0.55);
+  }
+  [data-sb-theme='obsidian'] .pos-root [data-sb='table-card'][data-state='cleaning'] {
+    background: rgba(56, 189, 248, 0.05);
+    border-color: rgba(56, 189, 248, 0.3);
+  }
+  .pos-root [data-sb='table-card'][data-state='available']:hover {
+    box-shadow: 0 8px 22px rgba(16, 185, 129, 0.18);
+  }
+  .pos-root [data-sb='table-card'][data-state='occupied']:hover {
+    box-shadow: 0 8px 22px rgba(220, 38, 38, 0.2);
+  }
+  [data-sb-theme] .pos-root [data-sb='table-card'][data-state='bill_requested'] {
+    padding-bottom: 32px;
+    animation: billPulse 2.2s ease-in-out infinite;
+  }
+  /* Flashing tag along the bottom edge of a table that asked for its bill */
+  .pos-root [data-sb='table-card'][data-state='bill_requested']::after {
+    content: 'Bill requested';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 4px 0;
+    text-align: center;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    background: #fbbf24;
+    color: #1f1300;
+    animation: billTagBlink 1.6s ease-in-out infinite;
+  }
+  [data-sb-theme='light'] .pos-root [data-sb='table-card'][data-state='available'] .text-emerald-700 {
+    color: #047857;
+  }
+  [data-sb-theme='obsidian'] .pos-root [data-sb='table-card'][data-state='available'] .text-emerald-700 {
+    color: #34d399;
+  }
+
+  /* ---- Kitchen board --------------------------------------------------------------------------------------- */
+  .pos-root [data-sb='seg'] {
+    background: var(--pos-tabs-bg);
+    border-color: var(--pos-row-border);
+    border-radius: 16px;
+    padding: 4px;
+  }
+  .pos-root [data-sb='seg-btn'] {
+    border-radius: 12px;
+    min-height: 44px;
+    color: var(--pos-dim);
+    background: transparent;
+    transition:
+      background 0.2s,
+      transform 0.15s;
+  }
+  .pos-root [data-sb='seg-btn']:active {
+    transform: scale(0.96);
+  }
+  .pos-root [data-sb='seg-btn'][aria-pressed='true'] {
+    background: linear-gradient(135deg, #dc2626, #f97316);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35);
+  }
+  [data-sb-theme] .pos-root [data-sb='kitchen-ticket'] {
+    position: relative;
+    border-radius: 18px;
+    border-width: 1px;
+    border-left: 4px solid var(--ribbon, #94a3b8);
+    border-top-color: var(--pos-row-border);
+    border-right-color: var(--pos-row-border);
+    border-bottom-color: var(--pos-row-border);
+    padding: 14px;
+  }
+  .pos-root [data-sb='kitchen-ticket'][data-state='new'] {
+    --ribbon: #38bdf8;
+  }
+  .pos-root [data-sb='kitchen-ticket'][data-state='accepted'] {
+    --ribbon: #818cf8;
+  }
+  .pos-root [data-sb='kitchen-ticket'][data-state='preparing'] {
+    --ribbon: #f97316;
+    box-shadow: 0 0 18px rgba(249, 115, 22, 0.12);
+  }
+  .pos-root [data-sb='kitchen-ticket'][data-state='ready'] {
+    --ribbon: #10b981;
+    animation: readyPulse 2.2s ease-in-out infinite;
+  }
+  .pos-root [data-sb='kitchen-ticket'][data-state='served'] {
+    --ribbon: #94a3b8;
+    opacity: 0.62;
+  }
+}

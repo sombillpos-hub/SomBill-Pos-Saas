@@ -1,0 +1,13 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+*.log
+**/generated/
+.env
+.env.*
+!.env.example
+# (secrets live in the project-level infrastructure/secrets/, ignored by the root .gitignore)
+
+# Local upload storage (STORAGE_LOCAL_DIR)
+apps/main-api/storage/

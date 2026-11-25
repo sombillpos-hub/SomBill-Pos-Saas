@@ -1,0 +1,87 @@
+# =====================================================================
+# SomBill – Supabase CLI Configuration (Staging & Production Parity)
+# Run `npx supabase ...` from `database/` (this file lives in `database/supabase/`).
+# =====================================================================
+project_id = "sombill"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 16
+
+[db.pooler]
+enabled = false
+port = 54329
+pool_mode = "transaction"
+default_pool_size = 20
+max_client_conn = 100
+
+[realtime]
+enabled = true
+
+[studio]
+enabled = true
+port = 54323
+api_url = "http://127.0.0.1"
+
+[storage]
+enabled = true
+file_size_limit = "5MiB"
+
+[storage.buckets.menu-images]
+public = true
+file_size_limit = "2MiB"
+allowed_mime_types = ["image/png", "image/jpeg", "image/webp"]
+
+[storage.buckets.branding]
+public = true
+file_size_limit = "2MiB"
+allowed_mime_types = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"]
+
+[storage.buckets.expense-attachments]
+public = false
+file_size_limit = "5MiB"
+allowed_mime_types = ["image/png", "image/jpeg", "image/webp", "application/pdf"]
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = [
+  "http://localhost:3000/reset-password",
+  "http://localhost:3000/login",
+  "https://staging.sombill.com/reset-password",
+  "https://staging.sombill.com/login",
+  "https://app.sombill.com/reset-password",
+  "https://app.sombill.com/login"
+]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+# Staff join by manager/platform invitation only; public self-signup stays off.
+enable_signup = false
+minimum_password_length = 10
+
+[auth.email]
+enable_signup = false
+double_confirm_changes = true
+enable_confirmations = true
+max_frequency = "60s"
+otp_length = 6
+otp_expiry = 900
+
+[auth.email.template.recovery]
+subject = "Your SomBill password reset code ({{ .Token }})"
+content_path = "./templates/recovery.html"
+
+[functions.manage-staff]
+enabled = true
+# CORS OPTIONS preflight and Bearer JWT verification via admin.auth.getUser() are enforced inside index.ts.
+verify_jwt = false
+entrypoint = "./functions/manage-staff/index.ts"

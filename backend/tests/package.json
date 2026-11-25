@@ -1,0 +1,24 @@
+{
+  "name": "@sombill/integration-tests",
+  "private": true,
+  "version": "0.2.0",
+  "type": "module",
+  "description": "End-to-end tests: API Gateway + Main API with real PostgreSQL, RabbitMQ and Redis",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@sombill/api-gateway": "workspace:*",
+    "@sombill/main-api": "workspace:*",
+    "@sombill/messaging": "workspace:*",
+    "@sombill/shared-utils": "workspace:*",
+    "@sombill/authentication": "workspace:*",
+    "@sombill/testing": "workspace:*",
+    "ioredis": "^5.8.2",
+    "supertest": "^7.1.4",
+    "@types/supertest": "^6.0.3",
+    "jose": "^6.1.0",
+    "@types/express": "^5.0.5"
+  }
+}

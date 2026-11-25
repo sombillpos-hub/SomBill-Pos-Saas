@@ -1,0 +1,605 @@
+/* ============================================================================
+   SOMBILL 2026 — ULTRA-PREMIUM FOOTER ARCHITECTURE (.pf-*)
+   ============================================================================ */
+
+@keyframes pf-logo-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pf-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.32);
+    opacity: 0.65;
+  }
+}
+
+/* 1. ATMOSPHERIC BACKGROUND LAYERS (.pf-root & .pf-bg) */
+.pf-root {
+  background: linear-gradient(180deg, #080305 0%, #030102 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  position: relative;
+  overflow: hidden;
+  font-family: 'Outfit', 'Inter', sans-serif;
+  color: #f8fafc;
+}
+
+.pf-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.pf-top-beam {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(220, 38, 38, 0.7) 20%,
+    rgba(249, 115, 22, 0.95) 50%,
+    rgba(251, 191, 36, 0.7) 80%,
+    transparent 100%
+  );
+  box-shadow: 0 0 30px rgba(249, 115, 22, 0.45);
+}
+
+.pf-glow-1 {
+  position: absolute;
+  top: -200px;
+  left: -100px;
+  width: 600px;
+  height: 600px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(220, 38, 38, 0.08) 0%, transparent 70%);
+}
+
+.pf-glow-2 {
+  position: absolute;
+  bottom: -150px;
+  right: -80px;
+  width: 500px;
+  height: 500px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(249, 115, 22, 0.08) 0%, transparent 70%);
+}
+
+.pf-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 0, 0, 0.35) 30%,
+    rgba(0, 0, 0, 0.35) 70%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 0, 0, 0.35) 30%,
+    rgba(0, 0, 0, 0.35) 70%,
+    transparent 100%
+  );
+}
+
+.pf-container {
+  position: relative;
+  z-index: 2;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px 36px;
+}
+
+/* 2. TOP 6-ITEM HOSPITALITY STATS BAR (.pf-stats-bar) */
+.pf-stats-bar {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 1.5rem 0;
+  margin-bottom: 3rem;
+}
+
+.pf-stat-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all 0.25s ease;
+  cursor: default;
+}
+
+.pf-stat-item:last-child {
+  border-right: none;
+}
+
+.pf-stat-icon {
+  color: #f97316;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    color 0.25s ease,
+    transform 0.25s ease;
+}
+
+.pf-stat-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #f8fafc;
+  transition: color 0.25s ease;
+}
+
+.pf-stat-lbl {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+
+.pf-stat-item:hover .pf-stat-val {
+  color: #fb923c;
+}
+
+.pf-stat-item:hover .pf-stat-icon {
+  color: #ef4444;
+  transform: scale(1.12);
+}
+
+/* 3. 5-COLUMN MAIN FOOTER GRID (.pf-main-grid) */
+.pf-main-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1.6fr;
+  gap: 2.25rem;
+  padding-bottom: 3rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Column 1: Brand Identity, Trust Pills & Spring Socials */
+.pf-brand-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+.pf-brand-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pf-logo-ring {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.pf-logo-ring::before {
+  content: '';
+  position: absolute;
+  inset: -50%;
+  background: conic-gradient(
+    from 0deg,
+    rgba(220, 38, 38, 0.6) 0%,
+    rgba(249, 115, 22, 0.95) 50%,
+    rgba(251, 191, 36, 0.6) 100%
+  );
+  animation: pf-logo-spin 4s linear infinite;
+  z-index: 0;
+}
+
+.pf-logo-img {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  object-fit: cover;
+  background: #080305;
+}
+
+.pf-brand-name {
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  background: linear-gradient(135deg, #ffffff 0%, #fb923c 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.pf-brand-sub {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.pf-brand-desc {
+  font-size: 0.8rem;
+  line-height: 1.65;
+  color: #94a3b8;
+  max-width: 340px;
+}
+
+.pf-trust-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.pf-trust-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+  font-size: 0.68rem;
+  font-weight: 600;
+  transition: all 0.25s ease;
+}
+
+.pf-trust-pill svg {
+  color: #f97316;
+}
+
+.pf-trust-pill:hover {
+  border-color: rgba(249, 115, 22, 0.35);
+  color: #fdba74;
+  background: rgba(249, 115, 22, 0.06);
+}
+
+.pf-socials {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding-top: 2px;
+}
+
+.pf-social-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    border-color 0.25s ease,
+    color 0.25s ease,
+    box-shadow 0.25s ease,
+    background 0.25s ease;
+}
+
+.pf-social-btn:hover {
+  color: #ffffff;
+  border-color: var(--sc, #f97316);
+  background: rgba(249, 115, 22, 0.12);
+  box-shadow: 0 6px 20px var(--sc-glow, rgba(249, 115, 22, 0.35));
+}
+
+/* Columns 2, 3, 4: Navigation & Company Modal Columns */
+.pf-link-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.pf-col-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #f8fafc;
+}
+
+.pf-link-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.pf-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #94a3b8;
+  background: transparent;
+  border: none;
+  padding: 2px 0;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    color 0.2s ease,
+    gap 0.2s ease;
+}
+
+.pf-link-arrow {
+  color: #f97316;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.pf-link:hover {
+  color: #f8fafc;
+  gap: 8px;
+}
+
+.pf-link:hover .pf-link-arrow {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Column 5: Newsletter, Ecosystem Tags & Mini Highlights */
+.pf-nl-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.pf-nl-desc {
+  font-size: 0.76rem;
+  line-height: 1.55;
+  color: #94a3b8;
+}
+
+.pf-nl-form {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 4px 4px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.pf-nl-form:focus-within {
+  border-color: rgba(249, 115, 22, 0.45);
+  box-shadow: 0 0 20px rgba(220, 38, 38, 0.12);
+}
+
+.pf-nl-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #f8fafc;
+  font-size: 0.78rem;
+}
+
+.pf-nl-input::placeholder {
+  color: #64748b;
+}
+
+.pf-nl-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  border: none;
+  background: linear-gradient(135deg, #dc2626, #f97316);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.4);
+  transition: transform 0.2s ease;
+}
+
+.pf-nl-btn:hover {
+  transform: scale(1.05);
+}
+
+.pf-nl-success {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 13px;
+  border-radius: 12px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #34d399;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.pf-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pf-stack-chip {
+  padding: 3px 9px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  color: #94a3b8;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.66rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  cursor: default;
+}
+
+.pf-stack-chip:hover {
+  color: #fb923c;
+  border-color: rgba(249, 115, 22, 0.38);
+  background: rgba(249, 115, 22, 0.08);
+}
+
+.pf-features-mini {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding-top: 2px;
+}
+
+.pf-feature-mini-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.73rem;
+  color: #cbd5e1;
+}
+
+.pf-feature-mini-item svg {
+  color: #10b981;
+  flex-shrink: 0;
+}
+
+/* 4. SIGNATURE BOTTOM BAR (.pf-bottom) */
+.pf-bottom {
+  padding-top: 1.65rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.76rem;
+  color: #94a3b8;
+}
+
+.pf-bottom-left {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.pf-dev-pill {
+  background: rgba(249, 115, 22, 0.12);
+  border: 1px solid rgba(249, 115, 22, 0.28);
+  color: #fb923c;
+  border-radius: 99px;
+  padding: 1px 8px;
+  font-weight: 800;
+  font-size: 0.7rem;
+}
+
+.pf-bottom-right {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.pf-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #cbd5e1;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.pf-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.8);
+  animation: pf-pulse 2s ease-in-out infinite;
+}
+
+.pf-version {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  color: #cbd5e1;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+/* Responsive Breakpoints */
+@media (max-width: 1080px) {
+  .pf-stats-bar {
+    grid-template-columns: repeat(3, 1fr);
+    row-gap: 12px;
+  }
+  .pf-stat-item:nth-child(3) {
+    border-right: none;
+  }
+  .pf-main-grid {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+  .pf-brand-col {
+    grid-column: span 3;
+  }
+  .pf-nl-col {
+    grid-column: span 3;
+  }
+}
+
+@media (max-width: 640px) {
+  .pf-stats-bar {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .pf-stat-item {
+    border-right: none;
+    justify-content: flex-start;
+  }
+  .pf-main-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .pf-brand-col,
+  .pf-nl-col {
+    grid-column: span 2;
+  }
+}

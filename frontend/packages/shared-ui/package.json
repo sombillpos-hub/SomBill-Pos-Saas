@@ -1,0 +1,7 @@
+{
+  "name": "@sombill/shared-ui",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Shared UI: primitives, shell, POS building blocks, design-system CSS"
+}

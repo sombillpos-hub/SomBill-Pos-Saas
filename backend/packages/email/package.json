@@ -1,0 +1,24 @@
+{
+  "name": "@sombill/email",
+  "private": true,
+  "version": "0.3.0",
+  "type": "module",
+  "description": "Transactional e-mail port (interface only; no provider is integrated yet)",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run --passWithNoTests"
+  }
+}

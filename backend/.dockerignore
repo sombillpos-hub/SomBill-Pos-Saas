@@ -1,0 +1,13 @@
+**/node_modules
+**/dist
+**/coverage
+**/generated
+**/.env
+**/.env.*
+!**/.env.example
+# Workspace members not needed in images: keep only their manifests so the frozen lockfile still matches.
+tests/*
+!tests/package.json
+!tests/support/
+tests/support/*
+!tests/support/package.json

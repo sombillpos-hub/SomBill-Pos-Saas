@@ -1,0 +1,7 @@
+{
+  "name": "@sombill/waiter",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Waiter POS dashboard"
+}

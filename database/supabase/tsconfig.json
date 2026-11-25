@@ -1,0 +1,21 @@
+{
+  // Type-checks the runtime-agnostic Edge Function logic and its unit tests.
+  // functions/*/index.ts are Deno entrypoints (npm: specifiers, Deno globals), checked by `deno check`.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true
+  },
+  "include": ["functions/**/handler.ts", "tests/**/*.ts", "vitest.config.ts"]
+}

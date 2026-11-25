@@ -1,0 +1,34 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "types": ["vitest/globals", "@testing-library/jest-dom"],
+    "paths": {
+      "@/*": ["./apps/dashboards/src/*"],
+      "@sombill/manager/*": ["./apps/manager/src/*"],
+      "@sombill/cashier/*": ["./apps/cashier/src/*"],
+      "@sombill/waiter/*": ["./apps/waiter/src/*"],
+      "@sombill/super-admin/*": ["./apps/super-admin/src/*"],
+      "@sombill/shared-ui/*": ["./packages/shared-ui/src/*"],
+      "@sombill/shared-hooks/*": ["./packages/shared-hooks/src/*"],
+      "@sombill/shared-utils/*": ["./packages/shared-utils/src/*"],
+      "@sombill/shared-types/*": ["./packages/shared-types/src/*"],
+      "@sombill/api-client/*": ["./packages/api-client/src/*"],
+      "@sombill/shared-config/*": ["./packages/shared-config/src/*"]
+    }
+  }
+}

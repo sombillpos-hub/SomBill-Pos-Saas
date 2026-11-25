@@ -1,0 +1,12 @@
+packages:
+  - 'apps/api-gateway'
+  - 'apps/main-api'
+  - 'packages/*'
+  - 'tests'
+  - 'tests/support'
+
+# Native modules that must run their install scripts (Argon2 ships prebuilt binaries;
+# esbuild is used by tsx/vitest).
+onlyBuiltDependencies:
+  - argon2
+  - esbuild

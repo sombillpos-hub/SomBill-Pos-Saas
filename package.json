@@ -1,0 +1,31 @@
+{
+  "name": "sombill",
+  "private": true,
+  "version": "1.0.0",
+  "description": "SomBill – public website, Manager/Waiter/Cashier dashboards and backend (API gateway + main API) and the current Supabase backend in database/. Convenience scripts only: frontend/ is an npm workspace (dashboards + packages), the website and backend keep their own dependencies.",
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "setup:backend": "node scripts/setup-backend.mjs --infra",
+    "setup:frontend": "node scripts/setup-frontend.mjs",
+    "install:all": "npm ci --prefix frontend/apps/website && npm ci --prefix frontend && corepack pnpm --dir backend install --frozen-lockfile && npm install --prefix database/supabase",
+    "dev:website": "npm --prefix frontend/apps/website run dev",
+    "dev:dashboards": "npm --prefix frontend/apps/dashboards run dev",
+    "dev:backend": "npm --prefix backend run dev",
+    "build": "npm run build:website && npm run build:dashboards && npm run build:backend",
+    "build:website": "npm --prefix frontend/apps/website run build",
+    "build:dashboards": "npm --prefix frontend/apps/dashboards run build",
+    "build:backend": "corepack pnpm --dir backend prisma:generate && corepack pnpm --dir backend build",
+    "typecheck": "npm --prefix frontend run typecheck && corepack pnpm --dir backend typecheck",
+    "lint": "npm --prefix frontend run lint && corepack pnpm --dir backend lint",
+    "format": "npm --prefix frontend run format && corepack pnpm --dir backend format",
+    "format:check": "npm --prefix frontend run format:check && corepack pnpm --dir backend format:check",
+    "test": "npm --prefix frontend run test && npm run test:legacy && corepack pnpm --dir backend test",
+    "test:legacy": "npm --prefix database/supabase test",
+    "test:db": "bash database/supabase/tests/run_db_tests.sh",
+    "test:tablet": "npm --prefix frontend run test:tablet",
+    "supabase:check": "node scripts/supabase-golive.mjs check-migrations",
+    "supabase:reconcile": "node scripts/supabase-golive.mjs reconcile",
+    "supabase:golive": "node scripts/supabase-golive.mjs deploy-staging",
+    "verify": "bash scripts/verify-all.sh"
+  }
+}

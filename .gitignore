@@ -1,0 +1,35 @@
+# Each app also has its own .gitignore; these rules cover the whole repository.
+node_modules/
+dist/
+dist-ssr/
+dist-e2e/
+*.tsbuildinfo
+*.log
+
+# Environment files: only the committed examples and the fake e2e values are allowed.
+.env
+.env.*
+!.env.example
+!frontend/apps/dashboards/.env.e2e
+
+# Supabase CLI local state
+database/supabase/.temp/
+database/supabase/.branches/
+
+# Local database dumps (database/backups/README.md explains how to make them)
+database/backups/*
+!database/backups/README.md
+
+# Secrets (JWT key pair from scripts/generate-jwt-keys.sh) and generated Prisma clients
+infrastructure/secrets/
+infrastructure/deployment/*/certs/
+backend/packages/database/src/*/generated/
+
+# Test and OS artefacts
+frontend/apps/dashboards/e2e/screens*/
+.DS_Store
+Thumbs.db
+
+# Local backups, zips and delivery folders made while restructuring (not part of the project)
+documentation/project/history/archive/
+Claude outputs/

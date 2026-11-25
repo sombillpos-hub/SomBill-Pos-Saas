@@ -1,0 +1,7 @@
+{
+  "name": "@sombill/shared-hooks",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Shared hooks, auth context, session store, POS cart"
+}

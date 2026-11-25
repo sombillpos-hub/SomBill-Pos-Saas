@@ -1,0 +1,34 @@
+{
+  "name": "@sombill/cache",
+  "private": true,
+  "version": "0.3.0",
+  "type": "module",
+  "description": "Redis connection and Redis-backed rate limiting shared by every gateway instance",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@sombill/logger": "workspace:*",
+    "ioredis": "^5.8.2",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.2.1",
+    "rate-limit-redis": "^4.2.3"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.5"
+  }
+}

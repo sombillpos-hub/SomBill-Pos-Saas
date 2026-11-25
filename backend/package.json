@@ -1,0 +1,39 @@
+{
+  "name": "sombill-backend",
+  "private": true,
+  "version": "0.2.0",
+  "type": "module",
+  "description": "SomBill backend monorepo: API Gateway and main API (Node.js, Express, TypeScript, PostgreSQL, Prisma, Redis, RabbitMQ)",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "pnpm -r --filter \"./packages/*\" --filter \"./tests/support\" build && pnpm -r --filter \"./apps/*\" build",
+    "dev": "tsx watch apps/main-api/src/devServer.ts",
+    "dev:gateway": "pnpm -r --parallel --filter \"./apps/*\" dev",
+    "prisma:generate": "pnpm --filter @sombill/database prisma:generate",
+    "db:migrate": "pnpm --filter @sombill/database db:migrate",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "eslint . --max-warnings=0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "pnpm -r --filter \"./packages/*\" --filter \"./apps/*\" test && pnpm --filter @sombill/integration-tests test",
+    "verify": "pnpm format:check && pnpm lint && pnpm prisma:generate && pnpm typecheck && pnpm test",
+    "db:seed": "pnpm --filter @sombill/main-api db:seed",
+    "smoke": "node tests/smoke/routes.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "@types/node": "^22.19.0",
+    "eslint": "^9.39.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^16.5.0",
+    "prettier": "^3.6.2",
+    "tsx": "^4.21.0",
+    "typescript": "5.9.3",
+    "typescript-eslint": "^8.48.0",
+    "vite": "^7.3.8",
+    "vitest": "3.2.4"
+  }
+}

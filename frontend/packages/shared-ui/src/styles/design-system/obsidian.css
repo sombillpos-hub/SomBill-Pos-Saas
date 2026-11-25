@@ -1,0 +1,666 @@
+/*
+ * "Obsidian Ruby" theme. Applied only while <html data-sb-theme="obsidian"> is set (the Manager layout sets it through
+ * useSbTheme), so the Waiter and Cashier apps and the sign-in pages keep their current look.
+ *
+ * It restyles the shared components (Card, Button, Badge, Modal, DataTable, inputs, toasts) through their classes and
+ * data-* hooks, and remaps the handful of light-theme utility classes that Manager pages use. Wrapped in
+ * `@media screen` so printed receipts, reports and orders stay black on white.
+ */
+@media screen {
+  html[data-sb-theme='obsidian'] {
+    color-scheme: dark;
+    --sb-chart-grid: rgba(255, 255, 255, 0.05);
+    --sb-chart-axis: rgba(248, 250, 252, 0.55);
+    --tw-ring-offset-color: #080305;
+  }
+
+  /* ---- Atmosphere (Matched to SomBill Website dark Obsidian-Burgundy + aurora + dot-grid) ------------------ */
+  [data-sb-theme='obsidian'] body {
+    background-color: var(--sb-bg-obsidian);
+    color: var(--sb-text-1);
+    font-family: var(--sb-font-main);
+    background-image:
+      radial-gradient(ellipse 80% 55% at 50% -15%, rgba(220, 38, 38, 0.2) 0%, transparent 70%),
+      radial-gradient(ellipse 60% 45% at 85% 20%, rgba(249, 115, 22, 0.12) 0%, transparent 65%),
+      radial-gradient(ellipse 50% 45% at 15% 85%, rgba(245, 158, 11, 0.08) 0%, transparent 65%),
+      radial-gradient(rgba(249, 115, 22, 0.13) 1px, transparent 1px);
+    background-size:
+      100% 100%,
+      100% 100%,
+      100% 100%,
+      28px 28px;
+    background-attachment: fixed;
+    transition:
+      background-color 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+      color 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  [data-sb-theme='obsidian'] ::selection {
+    background: rgba(249, 115, 22, 0.35);
+    color: #fff;
+  }
+  [data-sb-theme='obsidian'] .sb-app-root {
+    font-family: var(--sb-font-main);
+    color: var(--sb-text-1);
+  }
+  [data-sb-theme='obsidian'] ::-webkit-scrollbar-track {
+    background: rgba(8, 3, 5, 0.8);
+  }
+  [data-sb-theme='obsidian'] ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #dc2626 0%, #f97316 50%, #fbbf24 100%);
+    border-radius: 999px;
+    box-shadow: 0 0 10px rgba(220, 38, 38, 0.4);
+  }
+  [data-sb-theme='obsidian'] ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #ef4444 0%, #fb923c 50%, #fcd34d 100%);
+    box-shadow: 0 0 16px rgba(249, 115, 22, 0.6);
+  }
+  [data-sb-theme='obsidian'] ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  /* ---- Typography ------------------------------------------------------------------------------------------ */
+  [data-sb-theme='obsidian'] h1,
+  [data-sb-theme='obsidian'] h2,
+  [data-sb-theme='obsidian'] h3 {
+    letter-spacing: -0.02em;
+  }
+  [data-sb-theme='obsidian'] main h1 {
+    background: var(--sb-gradient-text);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    font-weight: 800;
+  }
+  [data-sb-theme='obsidian'] .tabular-nums,
+  [data-sb-theme='obsidian'] .font-mono,
+  [data-sb-theme='obsidian'] [data-sb='stat-value'] {
+    font-family: var(--sb-font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+  [data-sb-theme='obsidian'] [data-sb='stat-value'] {
+    letter-spacing: -0.03em;
+    font-weight: 700;
+  }
+
+  /* ---- Cards: Website-matched glass archetype (.premium-waali-card) ---------------------------------------- */
+  [data-sb-theme='obsidian'] .card,
+  [data-sb-theme='obsidian'] .card-glass-archetype {
+    position: relative;
+    overflow: hidden;
+    background: rgba(20, 8, 12, 0.76);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: var(--sb-radius-card);
+    box-shadow:
+      0 2px 0 rgba(255, 255, 255, 0.05) inset,
+      0 8px 32px rgba(0, 0, 0, 0.35);
+    transition: all 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  /* The blur is only visible where a card overlaps other content, so it stays on the (few) KPI cards and is left
+     off large panels and tables to keep scrolling smooth on modest hardware. */
+  [data-sb-theme='obsidian'] .card-glass-archetype {
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+  /* Diagonal shimmer sweep on hover */
+  [data-sb-theme='obsidian'] .card::before,
+  [data-sb-theme='obsidian'] .card-glass-archetype::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.07), transparent);
+    transform: skewX(-25deg);
+    transition: 0.75s ease;
+    pointer-events: none;
+    z-index: 1;
+  }
+  [data-sb-theme='obsidian'] .card:hover::before,
+  [data-sb-theme='obsidian'] .card-glass-archetype:hover::before {
+    left: 200%;
+  }
+  /* Ambient orb in the top-right corner */
+  [data-sb-theme='obsidian'] .card::after,
+  [data-sb-theme='obsidian'] .card-corner-orb {
+    content: '';
+    position: absolute;
+    top: -30px;
+    right: -30px;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(249, 115, 22, 0.16) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  /* Panels (tables, forms, lists) only glow; metric cards also lift. */
+  [data-sb-theme='obsidian'] .card:hover {
+    border-color: rgba(220, 38, 38, 0.28);
+    box-shadow:
+      0 16px 44px rgba(0, 0, 0, 0.45),
+      0 0 22px rgba(220, 38, 38, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  }
+  [data-sb-theme='obsidian'] .card-glass-archetype:hover {
+    transform: translateY(-5px) scale(1.01);
+    border-color: rgba(220, 38, 38, 0.35);
+    box-shadow:
+      0 20px 50px rgba(0, 0, 0, 0.5),
+      0 0 25px rgba(220, 38, 38, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+  [data-sb-theme='obsidian'] .card > header {
+    border-color: rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.015);
+  }
+  [data-sb-theme='obsidian'] .card > * {
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Narrow KPI cards (6-up grid): smaller icon and value, label may wrap instead of truncating. */
+  [data-sb-theme='obsidian'] .card-glass-archetype {
+    container-type: inline-size;
+  }
+  @container (max-width: 215px) {
+    [data-sb-theme='obsidian'] .card-glass-archetype {
+      gap: 10px;
+    }
+    [data-sb-theme='obsidian'] .card-glass-archetype > div:first-child {
+      width: 32px;
+      height: 32px;
+    }
+    [data-sb-theme='obsidian'] .card-glass-archetype [data-sb='stat-value'] {
+      font-size: 1.15rem;
+    }
+    [data-sb-theme='obsidian'] .card-glass-archetype p.truncate:not([data-sb='stat-value']) {
+      white-space: normal;
+      overflow: visible;
+      text-overflow: clip;
+      line-height: 1.25;
+    }
+  }
+
+  /* ---- Buttons ----------------------------------------------------------------------------------------------- */
+  [data-sb-theme='obsidian'] button[data-variant] {
+    border-radius: var(--sb-radius-control);
+    font-weight: 700;
+    transition: all 0.25s ease;
+  }
+  [data-sb-theme='obsidian'] button[data-variant='primary'] {
+    background: var(--sb-gradient-cta);
+    color: #fff;
+    border: 0;
+    box-shadow: 0 8px 24px rgba(220, 38, 38, 0.35);
+  }
+  [data-sb-theme='obsidian'] button[data-variant='orange'] {
+    background: linear-gradient(135deg, #f97316 0%, #fbbf24 100%);
+    color: #1a0a04;
+    box-shadow: 0 8px 24px rgba(249, 115, 22, 0.3);
+  }
+  [data-sb-theme='obsidian'] button[data-variant='primary']:hover:not(:disabled),
+  [data-sb-theme='obsidian'] button[data-variant='orange']:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 32px rgba(220, 38, 38, 0.5);
+    filter: brightness(1.1);
+  }
+  [data-sb-theme='obsidian'] button[data-variant='secondary'],
+  [data-sb-theme='obsidian'] button[data-variant='navy'] {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(220, 38, 38, 0.2);
+    color: rgba(255, 255, 255, 0.78);
+    box-shadow: none;
+  }
+  [data-sb-theme='obsidian'] button[data-variant='secondary']:hover:not(:disabled),
+  [data-sb-theme='obsidian'] button[data-variant='navy']:hover:not(:disabled) {
+    background: rgba(220, 38, 38, 0.08);
+    border-color: rgba(249, 115, 22, 0.4);
+    color: #fff;
+  }
+  [data-sb-theme='obsidian'] button[data-variant='ghost'] {
+    background: transparent;
+    color: var(--sb-text-3);
+  }
+  [data-sb-theme='obsidian'] button[data-variant='ghost']:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+  }
+  [data-sb-theme='obsidian'] button[data-variant='danger'] {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #fca5a5;
+  }
+  [data-sb-theme='obsidian'] button[data-variant='danger']:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.18);
+    border-color: rgba(239, 68, 68, 0.5);
+    color: #fff;
+  }
+  [data-sb-theme='obsidian'] button[data-variant]:disabled {
+    opacity: 0.5;
+    box-shadow: none;
+  }
+
+  /* ---- Form controls ----------------------------------------------------------------------------------------- */
+  [data-sb-theme='obsidian'] .input {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    color: var(--sb-text-1);
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s,
+      background 0.2s;
+  }
+  [data-sb-theme='obsidian'] .input::placeholder {
+    color: rgba(248, 250, 252, 0.5);
+  }
+  [data-sb-theme='obsidian'] .input:hover:not(:disabled) {
+    border-color: rgba(255, 255, 255, 0.18);
+  }
+  [data-sb-theme='obsidian'] .input:focus {
+    border-color: rgba(249, 115, 22, 0.6);
+    background: rgba(255, 255, 255, 0.06);
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.18);
+  }
+  [data-sb-theme='obsidian'] .input:disabled {
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--sb-text-5);
+  }
+  [data-sb-theme='obsidian'] select.input option,
+  [data-sb-theme='obsidian'] select option {
+    background: #140a0d;
+    color: #f8fafc;
+  }
+  [data-sb-theme='obsidian'] input[type='date']::-webkit-calendar-picker-indicator,
+  [data-sb-theme='obsidian'] input[type='time']::-webkit-calendar-picker-indicator {
+    filter: invert(0.85);
+    cursor: pointer;
+  }
+  [data-sb-theme='obsidian'] .label {
+    color: var(--sb-text-3);
+    letter-spacing: 0.08em;
+    font-weight: 700;
+  }
+  [data-sb-theme='obsidian'] input[type='checkbox'],
+  [data-sb-theme='obsidian'] input[type='radio'] {
+    accent-color: #f97316;
+  }
+
+  /* ---- Tables ------------------------------------------------------------------------------------------------ */
+  [data-sb-theme='obsidian'] table {
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  [data-sb-theme='obsidian'] .th {
+    color: rgba(248, 250, 252, 0.55);
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    padding: 13px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.015);
+  }
+  [data-sb-theme='obsidian'] .th button:hover {
+    color: #fff;
+  }
+  [data-sb-theme='obsidian'] .td {
+    color: var(--sb-text-2);
+    padding: 13px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.045);
+  }
+  [data-sb-theme='obsidian'] tbody tr:last-child .td {
+    border-bottom: 0;
+  }
+  [data-sb-theme='obsidian'] tbody tr {
+    transition: background 0.2s;
+  }
+  [data-sb-theme='obsidian'] tbody tr:hover {
+    background: rgba(220, 38, 38, 0.045);
+    color: #fff;
+  }
+  [data-sb-theme='obsidian'] tbody tr:hover > .td:first-child,
+  [data-sb-theme='obsidian'] tbody tr:hover > td:first-child {
+    box-shadow: inset 3px 0 0 #f97316;
+  }
+  [data-sb-theme='obsidian'] tfoot td {
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  /* ---- Status pills (Badge) ---------------------------------------------------------------------------------- */
+  [data-sb-theme='obsidian'] span[data-tone] {
+    gap: 6px;
+    padding: 3px 10px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    box-shadow: inset 0 0 0 1px var(--sb-pill-border);
+    background: var(--sb-pill-bg);
+    color: var(--sb-pill-fg);
+  }
+  [data-sb-theme='obsidian'] span[data-tone]::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: currentColor;
+    box-shadow: 0 0 8px currentColor;
+    flex-shrink: 0;
+  }
+  [data-sb-theme='obsidian'] span[data-tone='green'] {
+    --sb-pill-bg: rgba(16, 185, 129, 0.12);
+    --sb-pill-fg: #34d399;
+    --sb-pill-border: rgba(16, 185, 129, 0.25);
+  }
+  [data-sb-theme='obsidian'] span[data-tone='yellow'] {
+    --sb-pill-bg: rgba(245, 158, 11, 0.12);
+    --sb-pill-fg: #f59e0b;
+    --sb-pill-border: rgba(245, 158, 11, 0.25);
+  }
+  [data-sb-theme='obsidian'] span[data-tone='red'] {
+    --sb-pill-bg: rgba(239, 68, 68, 0.12);
+    --sb-pill-fg: #f87171;
+    --sb-pill-border: rgba(239, 68, 68, 0.28);
+  }
+  [data-sb-theme='obsidian'] span[data-tone='orange'] {
+    --sb-pill-bg: rgba(249, 115, 22, 0.12);
+    --sb-pill-fg: #fb923c;
+    --sb-pill-border: rgba(249, 115, 22, 0.28);
+  }
+  [data-sb-theme='obsidian'] span[data-tone='blue'] {
+    --sb-pill-bg: rgba(56, 189, 248, 0.12);
+    --sb-pill-fg: #38bdf8;
+    --sb-pill-border: rgba(56, 189, 248, 0.26);
+  }
+  [data-sb-theme='obsidian'] span[data-tone='purple'] {
+    --sb-pill-bg: rgba(167, 139, 250, 0.12);
+    --sb-pill-fg: #a78bfa;
+    --sb-pill-border: rgba(167, 139, 250, 0.28);
+  }
+  [data-sb-theme='obsidian'] span[data-tone='navy'] {
+    --sb-pill-bg: rgba(255, 255, 255, 0.07);
+    --sb-pill-fg: #e2e8f0;
+    --sb-pill-border: rgba(255, 255, 255, 0.14);
+  }
+  [data-sb-theme='obsidian'] span[data-tone='gray'] {
+    --sb-pill-bg: rgba(255, 255, 255, 0.04);
+    --sb-pill-fg: rgba(248, 250, 252, 0.62);
+    --sb-pill-border: rgba(255, 255, 255, 0.1);
+  }
+
+  /* ---- Modal, confirm dialog, toasts ---------------------------------------------------------------------- */
+  /* The shell (topbar 90, sidebar 80, popovers 120, palette 130) must sit under dialogs and toasts. */
+  [data-sb-theme='obsidian'] [data-sb='modal-overlay'] {
+    z-index: 150;
+    background: rgba(4, 1, 2, 0.72);
+    backdrop-filter: blur(10px) saturate(140%);
+    -webkit-backdrop-filter: blur(10px) saturate(140%);
+  }
+  [data-sb-theme='obsidian'] [data-sb='modal'] {
+    background: linear-gradient(160deg, rgba(22, 8, 12, 0.97) 0%, rgba(13, 5, 8, 0.97) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    box-shadow:
+      0 32px 80px rgba(0, 0, 0, 0.75),
+      0 0 40px rgba(220, 38, 38, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    animation: sb-fade-up 0.3s var(--sb-transition-smooth) both;
+  }
+  [data-sb-theme='obsidian'] [data-sb='modal-header'] {
+    border-color: rgba(255, 255, 255, 0.07);
+  }
+  [data-sb-theme='obsidian'] [data-sb='modal-footer'] {
+    border-color: rgba(255, 255, 255, 0.07);
+    background: rgba(255, 255, 255, 0.025);
+    border-radius: 0 0 24px 24px;
+  }
+  [data-sb-theme='obsidian'] [data-sb='toast-region'] {
+    z-index: 160;
+  }
+  [data-sb-theme='obsidian'] [data-sb='toast'] {
+    background: rgba(13, 6, 8, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    backdrop-filter: blur(24px);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+    animation: sb-fade-up 0.3s var(--sb-transition-smooth) both;
+  }
+  [data-sb-theme='obsidian'] [data-sb='toast'][data-kind='success'] {
+    border-color: rgba(16, 185, 129, 0.35);
+  }
+  [data-sb-theme='obsidian'] [data-sb='toast'][data-kind='error'] {
+    border-color: rgba(239, 68, 68, 0.4);
+  }
+  [data-sb-theme='obsidian'] [data-sb='toast'][data-kind='info'] {
+    border-color: rgba(56, 189, 248, 0.3);
+  }
+
+  /* ---- Skeleton ---------------------------------------------------------------------------------------------- */
+  [data-sb-theme='obsidian'] .animate-pulse.bg-slate-200\/70 {
+    animation: sb-skeleton 1.6s linear infinite;
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.04) 25%,
+      rgba(255, 255, 255, 0.1) 50%,
+      rgba(255, 255, 255, 0.04) 75%
+    );
+    background-size: 200% 100%;
+  }
+
+  /* ---- Charts ------------------------------------------------------------------------------------------------ */
+  [data-sb-theme='obsidian'] .sb-chart-bar {
+    filter: drop-shadow(0 4px 10px rgba(220, 38, 38, 0.28));
+    transition:
+      opacity 0.2s,
+      filter 0.2s;
+  }
+  [data-sb-theme='obsidian'] .sb-chart-bar[data-dim='true'] {
+    opacity: 0.45;
+  }
+  [data-sb-theme='obsidian'] .sb-chart-tooltip {
+    background: rgba(13, 6, 8, 0.95);
+    border: 1px solid rgba(220, 38, 38, 0.3);
+    border-radius: 14px;
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+    padding: 12px 18px;
+  }
+  [data-sb-theme='obsidian'] .sb-chart-tooltip-label {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  [data-sb-theme='obsidian'] .sb-chart-tooltip-value {
+    color: #fff;
+    font-family: var(--sb-font-mono);
+    font-weight: 800;
+    text-shadow: 0 0 10px rgba(249, 115, 22, 0.5);
+  }
+  [data-sb-theme='obsidian'] [data-sb='share-track'] {
+    background: rgba(255, 255, 255, 0.06);
+  }
+  [data-sb-theme='obsidian'] [data-sb='share-fill'] {
+    background: var(--sb-gradient-cta);
+    box-shadow: 0 0 12px rgba(249, 115, 22, 0.45);
+  }
+
+  /* ---- Utility remaps: light-theme classes used inside Manager pages -------------------------------------------- */
+  [data-sb-theme='obsidian'] .text-brand-navy {
+    color: var(--sb-text-1);
+  }
+  [data-sb-theme='obsidian'] .text-brand-text,
+  [data-sb-theme='obsidian'] .text-slate-800,
+  [data-sb-theme='obsidian'] .text-slate-900 {
+    color: var(--sb-text-2);
+  }
+  [data-sb-theme='obsidian'] .text-slate-700 {
+    color: rgba(248, 250, 252, 0.8);
+  }
+  [data-sb-theme='obsidian'] .text-slate-600 {
+    color: var(--sb-text-3);
+  }
+  [data-sb-theme='obsidian'] .text-slate-500 {
+    color: var(--sb-text-4);
+  }
+  [data-sb-theme='obsidian'] .text-slate-400,
+  [data-sb-theme='obsidian'] .text-slate-300 {
+    color: var(--sb-text-5);
+  }
+  [data-sb-theme='obsidian'] .text-brand-red,
+  [data-sb-theme='obsidian'] .text-red-600,
+  [data-sb-theme='obsidian'] .text-red-700 {
+    color: #f87171;
+  }
+  [data-sb-theme='obsidian'] .text-red-800 {
+    color: #fca5a5;
+  }
+  [data-sb-theme='obsidian'] .text-brand-orange,
+  [data-sb-theme='obsidian'] .text-orange-700,
+  [data-sb-theme='obsidian'] .text-orange-800,
+  [data-sb-theme='obsidian'] .text-orange-900 {
+    color: #fb923c;
+  }
+  [data-sb-theme='obsidian'] .text-emerald-600,
+  [data-sb-theme='obsidian'] .text-emerald-700 {
+    color: #34d399;
+  }
+  [data-sb-theme='obsidian'] .text-sky-600,
+  [data-sb-theme='obsidian'] .text-sky-700 {
+    color: #38bdf8;
+  }
+  [data-sb-theme='obsidian'] .text-violet-700 {
+    color: #a78bfa;
+  }
+  [data-sb-theme='obsidian'] .text-amber-800,
+  [data-sb-theme='obsidian'] .text-amber-900 {
+    color: #fbbf24;
+  }
+  [data-sb-theme='obsidian'] .hover\:text-brand-navy:hover,
+  [data-sb-theme='obsidian'] .hover\:text-brand-text:hover,
+  [data-sb-theme='obsidian'] .hover\:text-slate-700:hover {
+    color: #fff;
+  }
+  [data-sb-theme='obsidian'] .hover\:text-brand-red:hover {
+    color: #fb923c;
+  }
+
+  [data-sb-theme='obsidian'] .bg-white {
+    background-color: rgba(255, 255, 255, 0.03);
+  }
+  [data-sb-theme='obsidian'] .bg-slate-50 {
+    background-color: rgba(255, 255, 255, 0.035);
+  }
+  [data-sb-theme='obsidian'] .bg-slate-50\/70,
+  [data-sb-theme='obsidian'] .bg-slate-50\/60 {
+    background-color: rgba(255, 255, 255, 0.02);
+  }
+  [data-sb-theme='obsidian'] .bg-slate-100 {
+    background-color: rgba(255, 255, 255, 0.06);
+  }
+  [data-sb-theme='obsidian'] .hover\:bg-slate-50:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+  [data-sb-theme='obsidian'] .hover\:bg-slate-100:hover,
+  [data-sb-theme='obsidian'] .hover\:bg-white:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+  }
+  [data-sb-theme='obsidian'] .bg-red-50 {
+    background-color: rgba(220, 38, 38, 0.12);
+  }
+  [data-sb-theme='obsidian'] .bg-red-100 {
+    background-color: rgba(220, 38, 38, 0.2);
+  }
+  [data-sb-theme='obsidian'] .bg-orange-50 {
+    background-color: rgba(249, 115, 22, 0.12);
+  }
+  [data-sb-theme='obsidian'] .bg-orange-50\/40 {
+    background-color: rgba(249, 115, 22, 0.07);
+  }
+  [data-sb-theme='obsidian'] .bg-amber-50 {
+    background-color: rgba(245, 158, 11, 0.12);
+  }
+  [data-sb-theme='obsidian'] .bg-emerald-50 {
+    background-color: rgba(16, 185, 129, 0.12);
+  }
+  [data-sb-theme='obsidian'] .bg-emerald-100 {
+    background-color: rgba(16, 185, 129, 0.18);
+  }
+  [data-sb-theme='obsidian'] .bg-sky-50 {
+    background-color: rgba(56, 189, 248, 0.12);
+  }
+  [data-sb-theme='obsidian'] .bg-violet-50 {
+    background-color: rgba(167, 139, 250, 0.12);
+  }
+  [data-sb-theme='obsidian'] .bg-brand-navy\/10 {
+    background-color: rgba(255, 255, 255, 0.07);
+  }
+  [data-sb-theme='obsidian'] .bg-brand-red\/10 {
+    background-color: rgba(220, 38, 38, 0.16);
+  }
+  [data-sb-theme='obsidian'] .bg-brand-orange\/15 {
+    background-color: rgba(249, 115, 22, 0.16);
+  }
+  /* Active segmented controls / side tabs (were solid navy or red with white text) */
+  [data-sb-theme='obsidian'] .bg-brand-navy:not(button[data-variant]),
+  [data-sb-theme='obsidian'] .bg-brand-red:not(button[data-variant]) {
+    background: rgba(220, 38, 38, 0.16);
+    color: #fff;
+    box-shadow:
+      inset 0 0 0 1px rgba(249, 115, 22, 0.35),
+      inset 0 0 18px rgba(220, 38, 38, 0.1);
+  }
+  [data-sb-theme='obsidian'] .bg-brand-orange:not(button[data-variant]) {
+    background: var(--sb-gradient-cta);
+  }
+
+  [data-sb-theme='obsidian'] .border-slate-100,
+  [data-sb-theme='obsidian'] .border-slate-200\/80 {
+    border-color: rgba(255, 255, 255, 0.06);
+  }
+  [data-sb-theme='obsidian'] .border-slate-200 {
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+  [data-sb-theme='obsidian'] .border-slate-300 {
+    border-color: rgba(255, 255, 255, 0.14);
+  }
+  [data-sb-theme='obsidian'] .border-red-200,
+  [data-sb-theme='obsidian'] .border-red-300,
+  [data-sb-theme='obsidian'] .border-red-400 {
+    border-color: rgba(239, 68, 68, 0.4);
+  }
+  [data-sb-theme='obsidian'] .border-emerald-300 {
+    border-color: rgba(16, 185, 129, 0.4);
+  }
+  [data-sb-theme='obsidian'] .border-orange-300 {
+    border-color: rgba(249, 115, 22, 0.42);
+  }
+  [data-sb-theme='obsidian'] .border-sky-300 {
+    border-color: rgba(56, 189, 248, 0.4);
+  }
+  [data-sb-theme='obsidian'] .border-violet-300 {
+    border-color: rgba(167, 139, 250, 0.4);
+  }
+  [data-sb-theme='obsidian'] .border-brand-red {
+    border-color: #f97316;
+  }
+  [data-sb-theme='obsidian'] .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
+    border-color: rgba(255, 255, 255, 0.05);
+  }
+  [data-sb-theme='obsidian'] .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+    border-color: rgba(255, 255, 255, 0.07);
+  }
+  [data-sb-theme='obsidian'] .accent-brand-red {
+    accent-color: #f97316;
+  }
+  [data-sb-theme='obsidian'] .shadow-card,
+  [data-sb-theme='obsidian'] .shadow-sm,
+  [data-sb-theme='obsidian'] .shadow-lg {
+    --tw-shadow-color: rgba(0, 0, 0, 0.5);
+  }
+  [data-sb-theme='obsidian'] img.border-slate-200 {
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+}

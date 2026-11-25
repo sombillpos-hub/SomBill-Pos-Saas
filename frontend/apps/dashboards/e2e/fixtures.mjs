@@ -1,0 +1,355 @@
+// Stub data served in place of Supabase for real-browser layout checks.
+export const RID = '11111111-1111-4111-8111-111111111111';
+export const WAITER = '33333333-3333-4333-8333-333333333333';
+const now = new Date();
+const iso = (minAgo) => new Date(now.getTime() - minAgo * 60000).toISOString();
+const ts = { created_at: iso(600), updated_at: iso(600), archived_at: null };
+
+export const restaurant = {
+  id: RID,
+  name: 'Hargeisa Grill & Café',
+  logo_url: null,
+  address: 'Road 1, Hargeisa',
+  phone: '+252634000000',
+  email: null,
+  currency: 'USD',
+  timezone: 'Africa/Mogadishu',
+  tax_rate: 0.1,
+  tax_inclusive: false,
+  tax_label: 'VAT',
+  receipt_header: null,
+  receipt_footer: 'Mahadsanid!',
+  settings: {
+    tables: { cleaning_enabled: false, allow_multiple_orders: false },
+    orders: { require_cancel_reason: true, default_order_type: 'dine_in' },
+    inventory: { allow_negative_stock: false, deduct_on: 'completed' },
+    expenses: { approval_required: false },
+    permissions: {
+      cashier_can_cancel_orders: false,
+      cashier_can_refund: false,
+      cashier_can_create_customers: true,
+      waiter_can_create_customers: true,
+      waiter_can_edit_others_orders: false,
+      waiter_can_cancel_bill_request: true,
+    },
+  },
+  ...ts,
+};
+const cats = ['Breakfast', 'Mains', 'Grill', 'Rice & Pasta', 'Salads', 'Juices', 'Hot drinks', 'Desserts'];
+export const categories = cats.map((name, i) => ({
+  id: `c${i}`,
+  restaurant_id: RID,
+  name,
+  description: null,
+  image_url: null,
+  display_order: i,
+  is_active: true,
+  ...ts,
+}));
+const names = [
+  'Bariis iyo Hilib Ari',
+  'Suqaar',
+  'Chicken Shawarma Plate',
+  'Federation (Bariis & Baasto)',
+  'Grilled Hamour Fish',
+  'Laxoox with Honey',
+  'Mango Juice',
+  'Shaah Cadeys',
+  'Beef Burger with Fries',
+  'Garden Salad',
+  'Spaghetti Bolognese',
+  'Camel Milk Latte',
+  'Avocado Smoothie',
+  'Basbousa',
+  'Mixed Grill for Two',
+  'Fresh Lime Mint',
+];
+export const products = names.map((name, i) => ({
+  id: `p${i}`,
+  restaurant_id: RID,
+  category_id: `c${i % cats.length}`,
+  name,
+  description: 'House favourite, freshly prepared.',
+  sku: `SKU-${i}`,
+  barcode: null,
+  image_url: null,
+  price: [12, 9.5, 8, 7.5, 18, 4, 3, 1, 9, 6, 8.5, 3.5, 4.5, 3, 24, 2.5][i],
+  cost_price: null,
+  tax_category: i === 7 ? 'exempt' : 'standard',
+  is_available: i !== 4,
+  track_stock: false,
+  inventory_item_id: null,
+  preparation_station: 'kitchen',
+  ...ts,
+}));
+export const tables = Array.from({ length: 12 }, (_, i) => {
+  const n = i + 1;
+  const occ = {
+    3: ['occupied', 'o3', 103, WAITER, 45],
+    4: ['bill_requested', 'o4', 104, WAITER, 80],
+    7: ['payment_pending', 'o7', 107, 'other', 30],
+    9: ['occupied', 'o9', 109, 'other', 12],
+  }[n];
+  return {
+    id: `t${n}`,
+    restaurant_id: RID,
+    table_number: n,
+    name: n === 1 ? 'Window' : n === 2 ? 'Family room' : null,
+    capacity: [2, 8, 4, 4, 6, 2, 4, 4, 10, 2, 4, 6][i],
+    section: n <= 6 ? 'Main hall' : 'Terrace',
+    floor: 'Ground',
+    pos_x: (i % 6) * 2,
+    pos_y: Math.floor(i / 6) * 2,
+    shape: n % 4 === 0 ? 'round' : 'square',
+    needs_cleaning: false,
+    archived_at: null,
+    order_id: occ?.[1] ?? null,
+    order_number: occ?.[2] ?? null,
+    waiter_id: occ?.[3] ?? null,
+    order_started_at: occ ? iso(occ[4]) : null,
+    order_total: occ ? 42.35 : null,
+    balance: occ ? (n === 7 ? 12.35 : 42.35) : 0,
+    status: occ?.[0] ?? 'available',
+  };
+});
+const order = (id, n, table, status, extra = {}) => ({
+  id,
+  restaurant_id: RID,
+  order_number: n,
+  order_type: 'dine_in',
+  status,
+  payment_status: 'unpaid',
+  table_id: table,
+  customer_id: null,
+  waiter_id: WAITER,
+  cashier_id: null,
+  tax_rate: 0.1,
+  tax_inclusive: false,
+  subtotal: 38.5,
+  discount_amount: 0,
+  tax_amount: 3.85,
+  total: 42.35,
+  amount_paid: 0,
+  amount_refunded: 0,
+  notes: status === 'preparing' ? 'Allergy: nuts. Serve mains together.' : null,
+  guest_count: 4,
+  bill_requested_at: null,
+  bill_acknowledged_at: null,
+  completed_at: null,
+  cancelled_at: null,
+  cancelled_by: null,
+  cancel_reason: null,
+  stock_deducted_at: null,
+  stock_reversed_at: null,
+  created_by: WAITER,
+  created_at: iso(45),
+  updated_at: iso(5),
+  ...extra,
+});
+export const orders = [
+  order('o3', 103, 't3', 'preparing'),
+  order('o4', 104, 't4', 'served', { bill_requested_at: iso(3) }),
+  order('o5', 105, 't5', 'ready', { created_at: iso(25) }),
+  order('o6', 106, 't6', 'new', { created_at: iso(2) }),
+  order('o8', 108, 't8', 'accepted', { created_at: iso(8) }),
+];
+export const orderItems = orders.flatMap((o, k) => [
+  {
+    id: `${o.id}-a`,
+    restaurant_id: RID,
+    order_id: o.id,
+    product_id: 'p0',
+    product_name: 'Bariis iyo Hilib Ari',
+    quantity: 2,
+    unit_price: 12,
+    unit_cost: null,
+    tax_exempt: false,
+    line_total: 24,
+    notes: k === 0 ? 'No onions, extra sauce' : null,
+    is_voided: false,
+    void_reason: null,
+    created_at: o.created_at,
+  },
+  {
+    id: `${o.id}-b`,
+    restaurant_id: RID,
+    order_id: o.id,
+    product_id: 'p8',
+    product_name: 'Beef Burger with Fries',
+    quantity: 1,
+    unit_price: 9,
+    unit_cost: null,
+    tax_exempt: false,
+    line_total: 9,
+    notes: null,
+    is_voided: false,
+    void_reason: null,
+    created_at: o.created_at,
+  },
+  {
+    id: `${o.id}-c`,
+    restaurant_id: RID,
+    order_id: o.id,
+    product_id: 'p7',
+    product_name: 'Shaah Cadeys',
+    quantity: 3,
+    unit_price: 1,
+    unit_cost: null,
+    tax_exempt: true,
+    line_total: 3,
+    notes: null,
+    is_voided: false,
+    void_reason: null,
+    created_at: o.created_at,
+  },
+]);
+export const notifications = [
+  ['order_ready', 'Order #105 (Table 5) is ready to serve', 4, null],
+  ['bill_acknowledged', 'Cashier is processing the bill – Order #104 (Table 4)', 9, null],
+  ['order_preparing', 'Order #103 (Table 3) is being prepared', 20, iso(15)],
+  ['payment_completed', 'Payment completed – Order #99 (Table 2)', 70, iso(60)],
+].map(([type, title, m, read], i) => ({
+  id: `n${i}`,
+  restaurant_id: RID,
+  user_id: WAITER,
+  type,
+  title,
+  body: null,
+  order_id: 'o5',
+  table_id: null,
+  read_at: read,
+  created_at: iso(m),
+}));
+export const profile = {
+  id: WAITER,
+  full_name: 'Warsame Abdi',
+  email: 'warsame@grill.so',
+  phone: '+252634111222',
+  avatar_url: null,
+  last_login_at: iso(300),
+};
+export const member = {
+  id: 'm1',
+  restaurant_id: RID,
+  user_id: WAITER,
+  role: 'waiter',
+  status: 'active',
+  created_at: iso(60000),
+  updated_at: iso(60000),
+};
+export const shift = { id: 's1', restaurant_id: RID, user_id: WAITER, started_at: iso(185), ended_at: null };
+
+// ---- Cashier POS fixtures ----
+export const CASHIER = '55555555-5555-4555-8555-555555555555';
+export const cashierProfile = {
+  id: CASHIER,
+  full_name: 'Cali Hassan',
+  email: 'cali@grill.so',
+  phone: '+252634333444',
+  avatar_url: null,
+  last_login_at: iso(200),
+};
+export const cashierMember = {
+  id: 'm2',
+  restaurant_id: RID,
+  user_id: CASHIER,
+  role: 'cashier',
+  status: 'active',
+  created_at: iso(60000),
+  updated_at: iso(60000),
+};
+export const cashierShift = {
+  id: 'cs1',
+  restaurant_id: RID,
+  cashier_id: CASHIER,
+  status: 'open',
+  opening_cash: 50,
+  opened_at: iso(240),
+  opening_notes: 'Float from safe',
+  closed_at: null,
+  expected_cash: null,
+  counted_cash: null,
+  cash_difference: null,
+  closing_notes: null,
+  summary: null,
+  created_at: iso(240),
+};
+export const cashierSettings = {
+  ...restaurant.settings,
+  permissions: {
+    ...restaurant.settings.permissions,
+    cashier_can_verify_mobile_money: true,
+    require_open_shift: true,
+    cashier_refund_limit: 0,
+    cashier_max_discount_percent: 10,
+  },
+};
+const pay = (id, orderId, n, method, amount, status, extra = {}) => ({
+  id,
+  restaurant_id: RID,
+  order_id: orderId,
+  kind: 'payment',
+  method,
+  amount,
+  status,
+  transaction_number: n,
+  reference: method === 'cash' ? null : method === 'card' ? 'TID-58213' : 'EVC-7734120',
+  verification_status: status === 'pending' ? 'pending' : method === 'card' ? 'terminal_confirmed' : 'not_required',
+  cashier_id: CASHIER,
+  shift_id: 'cs1',
+  amount_received: method === 'cash' ? 50 : null,
+  change_given: method === 'cash' ? Number((50 - amount).toFixed(2)) : null,
+  notes: null,
+  verified_by: null,
+  verified_at: null,
+  verification_note: null,
+  created_at: iso(30 + n),
+  ...extra,
+});
+export const paidOrder = order('o2', 102, 't2', 'completed', {
+  payment_status: 'paid',
+  amount_paid: 42.35,
+  completed_at: iso(20),
+  created_at: iso(90),
+});
+export const cashierOrders = [
+  ...orders,
+  paidOrder,
+  order('o7', 107, 't7', 'served', { payment_status: 'partial', amount_paid: 30, created_at: iso(30) }),
+];
+export const cashierItems = [
+  ...orderItems,
+  ...['o2', 'o7'].flatMap((oid) =>
+    orderItems.filter((i) => i.order_id === 'o3').map((i) => ({ ...i, id: i.id.replace('o3', oid), order_id: oid })),
+  ),
+];
+export const cashierPayments = [
+  pay('pay1', 'o2', 11, 'cash', 22.35, 'succeeded'),
+  pay('pay2', 'o2', 12, 'card', 20, 'succeeded'),
+  pay('pay3', 'o7', 13, 'cash', 30, 'succeeded'),
+  pay('pay4', 'o7', 14, 'evc_plus', 12.35, 'pending'),
+];
+export const receipts = [
+  {
+    id: 'rc1',
+    restaurant_id: RID,
+    order_id: 'o2',
+    receipt_number: 21,
+    print_count: 1,
+    issued_by: CASHIER,
+    created_at: iso(19),
+    last_printed_at: iso(19),
+  },
+];
+export const shiftSummary = {
+  opening_cash: 50,
+  cash_sales: 52.35,
+  cash_refunds: 0,
+  pay_in: 0,
+  pay_out: 0,
+  expected_cash: 102.35,
+  by_method: { cash: 52.35, card: 20 },
+  pending_verification: 12.35,
+  refunds_total: 0,
+  transactions: 3,
+};

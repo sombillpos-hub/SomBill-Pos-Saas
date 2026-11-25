@@ -1,0 +1,36 @@
+{
+  "name": "@sombill/authentication",
+  "private": true,
+  "version": "0.3.0",
+  "type": "module",
+  "description": "Access-token verification (RS256 JWT), access-token issuing, refresh-token helpers, Argon2id password hashing",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@sombill/shared-types": "workspace:*",
+    "@sombill/shared-utils": "workspace:*",
+    "jose": "^6.1.0",
+    "argon2": "^0.44.0",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.5",
+    "@sombill/authorization": "workspace:*",
+    "zod": "^4.1.12"
+  }
+}

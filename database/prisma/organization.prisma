@@ -1,0 +1,193 @@
+// Organization module schema (database: sombill_organization). Migrations: migrations/organization/.
+// Client: backend/packages/database (@sombill/database/organization).
+// Organization & Branch Management service: organizations, branches, branch settings, subscriptions.
+// Database: sombill_organization (owned exclusively by this service).
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../../backend/packages/database/src/organization/generated"
+  moduleFormat        = "esm"
+  runtime             = "nodejs"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum OrganizationStatus {
+  ACTIVE
+  SUSPENDED
+
+  @@map("organization_status")
+}
+
+enum BranchStatus {
+  ACTIVE
+  INACTIVE
+
+  @@map("branch_status")
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+
+  @@map("subscription_status")
+}
+
+model Organization {
+  id              String             @id @default(uuid()) @db.Uuid
+  name            String
+  legalName       String?            @map("legal_name")
+  slug            String             @unique
+  /// ISO 3166-1 alpha-2
+  country         String             @db.Char(2)
+  /// ISO 4217, the organization's reporting currency
+  currency        String             @db.Char(3)
+  /// IANA time zone
+  timezone        String
+  status          OrganizationStatus @default(ACTIVE)
+  createdByUserId String             @map("created_by_user_id") @db.Uuid
+  createdAt       DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  branches     Branch[]
+  files        StoredFile[]
+  subscription Subscription?
+
+  @@map("organizations")
+}
+
+model Branch {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  /// Short code, unique within the organization (e.g. HRG-01)
+  code           String
+  name           String
+  phone          String?
+  email          String?
+  addressLine1   String?      @map("address_line1")
+  addressLine2   String?      @map("address_line2")
+  city           String?
+  country        String       @db.Char(2)
+  timezone       String
+  currency       String       @db.Char(3)
+  status         BranchStatus @default(ACTIVE)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  settings     BranchSettings?
+
+  files StoredFile[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId, status])
+  @@map("branches")
+}
+
+model BranchSettings {
+  branchId          String   @id @map("branch_id") @db.Uuid
+  /// Percent, e.g. 5.0000 = 5 %
+  taxRate           Decimal  @default(0) @map("tax_rate") @db.Decimal(7, 4)
+  serviceChargeRate Decimal  @default(0) @map("service_charge_rate") @db.Decimal(7, 4)
+  pricesIncludeTax  Boolean  @default(false) @map("prices_include_tax")
+  receiptHeader     String?  @map("receipt_header")
+  receiptFooter     String?  @map("receipt_footer")
+  updatedByUserId   String?  @map("updated_by_user_id") @db.Uuid
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@map("branch_settings")
+}
+
+model Subscription {
+  id                 String             @id @default(uuid()) @db.Uuid
+  organizationId     String             @unique @map("organization_id") @db.Uuid
+  plan               String
+  status             SubscriptionStatus
+  maxBranches        Int                @map("max_branches")
+  trialEndsAt        DateTime?          @map("trial_ends_at") @db.Timestamptz(6)
+  currentPeriodStart DateTime           @map("current_period_start") @db.Timestamptz(6)
+  currentPeriodEnd   DateTime           @map("current_period_end") @db.Timestamptz(6)
+  createdAt          DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@map("subscriptions")
+}
+
+model AuditLog {
+  id             String   @id @default(uuid()) @db.Uuid
+  occurredAt     DateTime @default(now()) @map("occurred_at") @db.Timestamptz(6)
+  actorUserId    String?  @map("actor_user_id") @db.Uuid
+  organizationId String?  @map("organization_id") @db.Uuid
+  action         String
+  targetType     String?  @map("target_type")
+  targetId       String?  @map("target_id")
+  ipAddress      String?  @map("ip_address")
+  userAgent      String?  @map("user_agent")
+  metadata       Json?
+
+  @@index([organizationId, occurredAt])
+  @@map("audit_logs")
+}
+
+model OutboxEvent {
+  id           String    @id @db.Uuid
+  eventType    String    @map("event_type")
+  eventVersion Int       @map("event_version")
+  payload      Json
+  occurredAt   DateTime  @map("occurred_at") @db.Timestamptz(6)
+  availableAt  DateTime  @default(now()) @map("available_at") @db.Timestamptz(6)
+  publishedAt  DateTime? @map("published_at") @db.Timestamptz(6)
+  attempts     Int       @default(0)
+  lastError    String?   @map("last_error")
+
+  @@index([publishedAt, availableAt])
+  @@map("outbox_events")
+}
+
+model ProcessedEvent {
+  eventId     String   @map("event_id") @db.Uuid
+  consumer    String
+  processedAt DateTime @default(now()) @map("processed_at") @db.Timestamptz(6)
+
+  @@id([eventId, consumer])
+  @@map("processed_events")
+}
+
+enum FilePurpose {
+  MENU_IMAGE
+  BRANDING
+  EXPENSE_ATTACHMENT
+  DOCUMENT
+
+  @@map("file_purpose")
+}
+
+/// Metadata of an uploaded file; the bytes live in the storage provider under `storageKey`.
+model StoredFile {
+  id               String      @id @default(uuid()) @db.Uuid
+  organizationId   String      @map("organization_id") @db.Uuid
+  branchId         String?     @map("branch_id") @db.Uuid
+  purpose          FilePurpose
+  storageKey       String      @unique @map("storage_key")
+  originalName     String      @map("original_name")
+  contentType      String      @map("content_type")
+  sizeBytes        Int         @map("size_bytes")
+  checksumSha256   String      @map("checksum_sha256") @db.Char(64)
+  uploadedByUserId String      @map("uploaded_by_user_id") @db.Uuid
+  createdAt        DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch       Branch?      @relation(fields: [branchId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, purpose, createdAt])
+  @@map("stored_files")
+}

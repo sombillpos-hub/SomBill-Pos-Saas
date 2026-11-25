@@ -1,0 +1,7 @@
+{
+  "name": "@sombill/api-client",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Supabase, HTTP and socket clients, query client, data access"
+}

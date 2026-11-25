@@ -1,0 +1,30 @@
+{
+  "name": "sombill-frontend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "SomBill frontend workspace: apps/ (website + dashboards) and packages/ (shared code). The website is NOT a workspace member: it has its own React 19 / Tailwind 4 / Vite 8 dependency tree.",
+  "workspaces": [
+    "apps/dashboards",
+    "apps/manager",
+    "apps/cashier",
+    "apps/waiter",
+    "apps/super-admin",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:website": "npm --prefix apps/website run dev",
+    "dev:dashboards": "npm --prefix apps/dashboards run dev",
+    "build": "npm run build:website && npm run build:dashboards",
+    "build:website": "npm --prefix apps/website run build",
+    "build:dashboards": "npm --prefix apps/dashboards run build",
+    "typecheck": "npm --prefix apps/website run lint && npm run typecheck:dashboards",
+    "lint": "eslint apps packages --max-warnings=0",
+    "test": "npm --prefix apps/dashboards test",
+    "test:tablet": "npm --prefix apps/dashboards run test:tablet",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck:dashboards": "npm --prefix apps/dashboards run typecheck"
+  }
+}

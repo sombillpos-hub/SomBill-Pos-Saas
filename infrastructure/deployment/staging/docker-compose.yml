@@ -1,0 +1,28 @@
+# Staging override for the base stack in ../development/docker-compose.yml. From the project root:
+#   docker compose -f infrastructure/deployment/development/docker-compose.yml \
+#                  -f infrastructure/deployment/staging/docker-compose.yml \
+#                  --env-file infrastructure/deployment/staging/.env up -d --build
+# Compose 2.24+ (uses !reset / !override).
+
+x-restart: &restart
+  restart: unless-stopped
+
+services:
+  postgres: { <<: *restart }
+  redis: { <<: *restart }
+  rabbitmq:
+    <<: *restart
+    ports: !reset [] # management UI is not published; use an SSH tunnel if needed
+  main-api:
+    <<: *restart
+    environment:
+      LOG_LEVEL: info
+      COOKIE_SECURE: "true"
+  api-gateway:
+    <<: *restart
+    environment:
+      LOG_LEVEL: info
+      DOCS_ENABLED: "true"
+  dashboards: { <<: *restart }
+  nginx:
+    <<: *restart

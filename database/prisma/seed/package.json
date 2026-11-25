@@ -1,0 +1,5 @@
+{
+  "private": true,
+  "type": "module",
+  "description": "Marks the seed scripts as ES modules. Run them with `pnpm db:seed` from backend/."
+}

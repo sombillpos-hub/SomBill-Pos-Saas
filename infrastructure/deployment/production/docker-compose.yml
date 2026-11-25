@@ -1,0 +1,33 @@
+# Production override for the base stack in ../development/docker-compose.yml. From the project root:
+#   docker compose -f infrastructure/deployment/development/docker-compose.yml \
+#                  -f infrastructure/deployment/production/docker-compose.yml \
+#                  --env-file infrastructure/deployment/production/.env up -d --build
+# Compose 2.24+ (uses !reset / !override).
+
+x-restart: &restart
+  restart: unless-stopped
+
+services:
+  postgres: { <<: *restart }
+  redis: { <<: *restart }
+  rabbitmq:
+    <<: *restart
+    ports: !reset [] # management UI is not published; use an SSH tunnel if needed
+  main-api:
+    <<: *restart
+    environment:
+      LOG_LEVEL: info
+      COOKIE_SECURE: "true"
+  api-gateway:
+    <<: *restart
+    environment:
+      LOG_LEVEL: info
+      DOCS_ENABLED: "false"
+  dashboards: { <<: *restart }
+  nginx:
+    <<: *restart
+    # Terminate TLS here: uncomment the 443 server block in infrastructure/nginx/nginx.conf and mount the certificates.
+    ports: !override ["80:80", "443:443"]
+    volumes:
+      - ../../nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ${TLS_CERT_DIR:-./certs}:/etc/nginx/certs:ro

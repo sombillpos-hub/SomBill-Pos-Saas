@@ -1,0 +1,16 @@
+{
+  "name": "@sombill/supabase-legacy",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Current production backend for the existing dashboards: Supabase schema, RLS, SQL business logic, manage-staff Edge Function. Kept running until the Node backend reaches feature parity.",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "test:db": "bash tests/run_db_tests.sh"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "vitest": "3.2.4"
+  }
+}

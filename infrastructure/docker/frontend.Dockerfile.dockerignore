@@ -1,0 +1,9 @@
+**/node_modules
+**/dist
+**/dist-ssr
+**/dist-e2e
+**/coverage
+**/.env
+**/.env.*
+!**/.env.example
+apps/dashboards/e2e/screens*
