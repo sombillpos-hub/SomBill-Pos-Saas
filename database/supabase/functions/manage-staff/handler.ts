@@ -78,6 +78,8 @@ function safeRedirect(v: unknown, allowedOrigins: string[]): string | undefined 
   if (typeof v !== 'string' || !v) return undefined;
   try {
     const u = new URL(v);
+    if (u.protocol !== 'https:' && u.protocol !== 'http:') return undefined;
+    if (allowedOrigins.length === 0) return u.toString();
     return allowedOrigins.includes(u.origin) ? u.toString() : undefined;
   } catch {
     return undefined;
@@ -115,6 +117,7 @@ export async function handleStaffAction(
       if (!ROLES.includes(role)) throw new HttpError(400, 'Role is invalid');
       const password = str(b.password, 'Password', { optional: true, min: 6, max: 128 });
 
+      const redirectTo = safeRedirect(b.redirect_to, allowedOrigins);
       let userId = await db.findUserIdByEmail(email);
       let invited = false;
       let createdWithPassword = false;
@@ -124,12 +127,15 @@ export async function handleStaffAction(
       } else if (password && db.createUserWithPassword) {
         userId = await db.createUserWithPassword(email, password, { full_name: fullName, phone });
         createdWithPassword = true;
+        // Also email a login / password-reset link so the staff member receives an invitation link by email.
+        try {
+          await db.sendPasswordReset(email, redirectTo);
+          invited = true;
+        } catch {
+          // Best-effort: instant password login still works immediately.
+        }
       } else {
-        userId = await db.inviteUser(
-          email,
-          { full_name: fullName, phone },
-          safeRedirect(b.redirect_to, allowedOrigins),
-        );
+        userId = await db.inviteUser(email, { full_name: fullName, phone }, redirectTo);
         invited = true;
       }
       await db.upsertProfile(userId, { full_name: fullName, phone, email });

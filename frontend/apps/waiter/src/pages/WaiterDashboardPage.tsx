@@ -20,6 +20,7 @@ import { presetRange, rangeToIso } from '@sombill/shared-utils/dates';
 import { fetchTableStatus } from '@sombill/api-client/queries';
 import { formatDateTime, formatDuration, formatMoney } from '@sombill/shared-utils/format';
 import { Card, DashboardHero, EmptyState, ErrorState, StatCard } from '@sombill/shared-ui/ui/Feedback';
+import { OrderStatusBadge } from '@sombill/shared-ui/ui/StatusBadges';
 import { Button } from '@sombill/shared-ui/ui/Button';
 import { useToast } from '@sombill/shared-ui/ui/Toast';
 import {
@@ -54,6 +55,7 @@ export default function WaiterDashboardPage() {
     const mine = active.filter((o) => o.waiter_id === uid || o.waiter_id === null);
     return {
       mine,
+      tablesById: new Map(tables.map((t) => [t.id, t.table_number])),
       shift,
       notes,
       completedToday: today.filter((o) => o.status === 'completed'),
@@ -239,7 +241,50 @@ export default function WaiterDashboardPage() {
               )}
             />
           </section>
-          <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <Card
+              title="Active & QR orders"
+              bodyClassName="p-0"
+              action={
+                <Link
+                  to="/waiter/orders"
+                  className="-my-2 inline-flex min-h-[40px] items-center px-2 text-sm font-semibold text-brand-red hover:underline"
+                >
+                  All orders
+                </Link>
+              }
+            >
+              {!(d?.mine.length ?? 0) ? (
+                <EmptyState title="No active orders" message="New table and QR orders appear here live." />
+              ) : (
+                <ul className="divide-y divide-slate-100">
+                  {d!.mine.slice(0, 8).map((o) => (
+                    <li key={o.id}>
+                      <Link
+                        to={`/waiter/orders/${o.id}`}
+                        className="flex min-h-[56px] items-center justify-between gap-2 px-5 py-3 hover:bg-slate-50"
+                      >
+                        <span className="min-w-0">
+                          <span className="inline-flex items-center gap-1.5">
+                            <b>#{o.order_number}</b>
+                            {o.waiter_id === null && (
+                              <span className="rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-orange-700">
+                                QR
+                              </span>
+                            )}
+                          </span>
+                          <span className="block truncate text-xs text-slate-500">
+                            {o.table_id ? `Table ${d!.tablesById.get(o.table_id) ?? '—'}` : 'Order'} ·{' '}
+                            {formatDuration(o.created_at)}
+                          </span>
+                        </span>
+                        <OrderStatusBadge s={o.status} />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
             <Card
               title="Orders ready for pickup"
               bodyClassName="p-0"

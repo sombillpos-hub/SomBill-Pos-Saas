@@ -1,6 +1,7 @@
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ConciergeBell, PlusCircle, Receipt } from 'lucide-react';
+import { ArrowLeft, ConciergeBell, PlusCircle, Printer, Receipt } from 'lucide-react';
 import { useState } from 'react';
+import { KitchenTicketModal, type KitchenTicketData } from '../components/KitchenTicket';
 import { useAuth, useRestaurant } from '@sombill/shared-hooks/AuthContext';
 import { useQuery } from '@sombill/shared-hooks/useQuery';
 import { useRealtime } from '@sombill/shared-hooks/useRealtime';
@@ -33,6 +34,7 @@ export default function WaiterOrderDetailPage() {
   const cart = useCart();
   const staff = useStaffDirectory(r.id);
   const [serving, setServing] = useState(false);
+  const [ticketPreview, setTicketPreview] = useState<KitchenTicketData | null>(null);
   const money = (n: number) => formatMoney(n, r.currency);
   const q = useQuery(async () => {
     const o = unwrap(
@@ -148,6 +150,27 @@ export default function WaiterOrderDetailPage() {
                 Add items
               </Button>
             )}
+            <Button
+              className="h-11"
+              variant="secondary"
+              icon={<Printer className="h-4 w-4" />}
+              onClick={() =>
+                setTicketPreview({
+                  restaurantName: r.name,
+                  orderNumber: o.order_number,
+                  tableLabel: table ? `Table ${table.table_number}${table.name ? ` · ${table.name}` : ''}` : null,
+                  waiterName: o.waiter_id ? staff.nameOf(o.waiter_id) : 'QR Self-Order',
+                  orderNotes: o.notes,
+                  timezone: r.timezone,
+                  printedAt: new Date(),
+                  items: items
+                    .filter((i) => !i.is_voided)
+                    .map((i) => ({ name: i.product_name, quantity: Number(i.quantity), notes: i.notes })),
+                })
+              }
+            >
+              Print items receipt
+            </Button>
             {canActOnOrder(o, uid, role, r.settings) && (
               <Button
                 className="h-11"
@@ -285,6 +308,7 @@ export default function WaiterOrderDetailPage() {
           </Card>
         </div>
       </div>
+      <KitchenTicketModal data={ticketPreview} onClose={() => setTicketPreview(null)} />
     </div>
   );
 }

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle2, MessageSquarePlus, Minus, Plus, Search, Send, Trash2 } from 'lucide-react';
+import { CheckCircle2, MessageSquarePlus, Minus, Plus, Printer, Search, Send, Trash2 } from 'lucide-react';
 import { CatChip, CustomerPicker, ProductCard } from '@sombill/shared-ui/pos/PosComponents';
+import { KitchenTicketModal, type KitchenTicketData, type KitchenTicketItem } from '../components/KitchenTicket';
 import { useAuth, useRestaurant } from '@sombill/shared-hooks/AuthContext';
 import { useQuery } from '@sombill/shared-hooks/useQuery';
 import { useRealtime } from '@sombill/shared-hooks/useRealtime';
@@ -24,11 +25,13 @@ interface Confirmation {
   total: number;
   added: boolean;
   tableNo: number | null;
+  items: KitchenTicketItem[];
+  orderNotes: string | null;
 }
 
 export default function NewOrderPage() {
   const r = useRestaurant();
-  const { session, role } = useAuth();
+  const { session, role, profile } = useAuth();
   const uid = session?.user.id;
   const cart = useCart();
   const toast = useToast();
@@ -42,6 +45,7 @@ export default function NewOrderPage() {
   const inFlight = useRef(false);
   const [openNote, setOpenNote] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
+  const [ticketPreview, setTicketPreview] = useState<KitchenTicketData | null>(null);
 
   const menu = useQuery(async () => {
     const [products, categories] = await Promise.all([fetchProducts(r.id), fetchCategories(r.id)]);
@@ -187,12 +191,20 @@ export default function NewOrderPage() {
       return;
     }
     const data = res.data as { order_id: string; order_number: number; total: number };
+    const sentItems: KitchenTicketItem[] = cart.lines.map((l) => ({
+      name: l.name,
+      quantity: l.quantity,
+      notes: l.notes.trim() || null,
+    }));
+    const sentOrderNotes = cart.orderNotes.trim() || null;
     setConfirmation({
       orderId: data.order_id,
       orderNumber: data.order_number,
       total: Number(data.total),
       added: addMode,
       tableNo: selectedTable?.table_number ?? null,
+      items: sentItems,
+      orderNotes: sentOrderNotes,
     });
     toast.success(
       addMode ? `Items added to order #${data.order_number}.` : `Order #${data.order_number} sent to the kitchen.`,
@@ -200,8 +212,22 @@ export default function NewOrderPage() {
     cart.clear();
   };
 
+  const openDraftTicket = () => {
+    if (!cart.lines.length) return;
+    setTicketPreview({
+      restaurantName: r.name,
+      orderNumber: addMode ? (order?.order_number ?? null) : null,
+      tableLabel: selectedTable ? `Table ${selectedTable.table_number}` : null,
+      waiterName: profile?.full_name ?? null,
+      orderNotes: cart.orderNotes.trim() || null,
+      timezone: r.timezone,
+      printedAt: new Date(),
+      items: cart.lines.map((l) => ({ name: l.name, quantity: l.quantity, notes: l.notes.trim() || null })),
+    });
+  };
+
   return (
-    <div className="lg:flex lg:h-[calc(100vh-104px)] lg:flex-col">
+    <div className="flex flex-col">
       <PageHeader
         title={addMode ? `Add items to order #${order?.order_number ?? ''}` : 'New Order'}
         description={
@@ -218,10 +244,10 @@ export default function NewOrderPage() {
         }
       />
 
-      <div className="grid grid-cols-1 gap-4 pb-24 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,58fr)_minmax(340px,42fr)] lg:grid-rows-[minmax(0,1fr)] lg:pb-0">
+      <div className="grid grid-cols-1 items-start gap-4 pb-24 lg:grid-cols-[minmax(0,56fr)_minmax(360px,44fr)] lg:pb-6">
         {/* LEFT: catalogue */}
-        <section aria-label="Menu" className="min-w-0 space-y-3 lg:flex lg:min-h-0 lg:flex-col lg:space-y-0 lg:gap-3">
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,0.7fr)] lg:shrink-0">
+        <section aria-label="Menu" className="min-w-0 space-y-3">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,0.7fr)]">
             <div className="pos-search relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
@@ -296,14 +322,34 @@ export default function NewOrderPage() {
         </section>
 
         {/* RIGHT: order summary */}
-        <aside id="order-panel" aria-label="Current order" className="scroll-mt-20 lg:min-h-0">
-          <Card className="pos-ticket flex h-full flex-col" bodyClassName="flex min-h-0 flex-1 flex-col p-0">
+        <aside id="order-panel" aria-label="Current order" className="scroll-mt-20 lg:sticky lg:top-4">
+          <Card className="pos-ticket flex flex-col" bodyClassName="flex flex-col p-0">
             <div className="space-y-3 border-b border-slate-100 p-4">
               <div className="flex items-center justify-between gap-2">
-                <h2 className="text-lg font-bold text-brand-navy">
-                  {addMode ? `Order #${order?.order_number ?? '…'}` : 'New order'}
-                </h2>
-                {addMode && order && <span className="text-xs text-slate-500">Current total {money(order.total)}</span>}
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-bold text-brand-navy">
+                    {addMode ? `Order #${order?.order_number ?? '…'}` : 'New order'}
+                  </h2>
+                  {cart.itemCount > 0 && (
+                    <span className="inline-flex h-6 min-w-[24px] items-center justify-center rounded-full bg-brand-orange/15 px-2 text-xs font-bold text-brand-orange">
+                      {cart.itemCount} item{cart.itemCount === 1 ? '' : 's'}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {addMode && order && (
+                    <span className="text-xs text-slate-500">Current total {money(order.total)}</span>
+                  )}
+                  {cart.lines.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => cart.clear(true)}
+                      className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-red-600 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" /> Clear
+                    </button>
+                  )}
+                </div>
               </div>
               {addMode ? (
                 <p className="text-sm text-slate-600">
@@ -356,7 +402,7 @@ export default function NewOrderPage() {
               )}
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto p-4">
+            <div className="max-h-[420px] overflow-y-auto p-4">
               {addMode && !addAllowed && order && (
                 <p className="mb-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
                   Items can’t be added:{' '}
@@ -452,7 +498,7 @@ export default function NewOrderPage() {
                           </button>
                           <button
                             type="button"
-                            className="flex h-11 w-11 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"
+                            className="flex h-11 w-11 items-center justify-center rounded-lg border border-red-200 bg-red-50/70 text-red-600 hover:bg-red-100"
                             data-sb="row-remove"
                             aria-label={`Remove ${l.name}`}
                             onClick={() => cart.remove(l.key)}
@@ -520,19 +566,31 @@ export default function NewOrderPage() {
                   {error}
                 </p>
               )}
-              <Button
-                variant="orange"
-                data-sb="charge"
-                className="h-14 w-full text-base"
-                loading={busy}
-                disabled={
-                  busy || !cart.lines.length || (!addMode && !cart.tableId) || !addAllowed || Boolean(tableTaken)
-                }
-                icon={<Send className="h-5 w-5" />}
-                onClick={() => void send()}
-              >
-                {addMode ? 'Add to order' : 'Send order'}
-              </Button>
+              <div className="flex flex-col gap-2">
+                <Button
+                  variant="orange"
+                  data-sb="charge"
+                  className="h-14 w-full text-base"
+                  loading={busy}
+                  disabled={
+                    busy || !cart.lines.length || (!addMode && !cart.tableId) || !addAllowed || Boolean(tableTaken)
+                  }
+                  icon={<Send className="h-5 w-5" />}
+                  onClick={() => void send()}
+                >
+                  {addMode ? 'Add to order' : 'Send order'}
+                </Button>
+                {cart.lines.length > 0 && (
+                  <Button
+                    variant="secondary"
+                    className="h-11 w-full"
+                    icon={<Printer className="h-4 w-4" />}
+                    onClick={openDraftTicket}
+                  >
+                    Print food items receipt
+                  </Button>
+                )}
+              </div>
             </div>
           </Card>
         </aside>
@@ -578,6 +636,25 @@ export default function NewOrderPage() {
               New order
             </Button>
             <Button
+              variant="secondary"
+              icon={<Printer className="h-4 w-4" />}
+              onClick={() => {
+                if (!confirmation) return;
+                setTicketPreview({
+                  restaurantName: r.name,
+                  orderNumber: confirmation.orderNumber,
+                  tableLabel: confirmation.tableNo ? `Table ${confirmation.tableNo}` : null,
+                  waiterName: profile?.full_name ?? null,
+                  orderNotes: confirmation.orderNotes,
+                  timezone: r.timezone,
+                  printedAt: new Date(),
+                  items: confirmation.items,
+                });
+              }}
+            >
+              Print items receipt
+            </Button>
+            <Button
               onClick={() => {
                 const id = confirmation!.orderId;
                 setConfirmation(null);
@@ -603,6 +680,7 @@ export default function NewOrderPage() {
           </div>
         )}
       </Modal>
+      <KitchenTicketModal data={ticketPreview} onClose={() => setTicketPreview(null)} />
     </div>
   );
 }
