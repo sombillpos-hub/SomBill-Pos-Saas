@@ -14,7 +14,7 @@ max_rows = 1000
 [db]
 port = 54322
 shadow_port = 54320
-major_version = 16
+major_version = 17
 
 [db.pooler]
 enabled = false
@@ -69,7 +69,7 @@ enable_signup = false
 minimum_password_length = 10
 
 [auth.email]
-enable_signup = false
+enabled = true
 double_confirm_changes = true
 enable_confirmations = true
 max_frequency = "60s"
@@ -78,7 +78,7 @@ otp_expiry = 900
 
 [auth.email.template.recovery]
 subject = "Your SomBill password reset code ({{ .Token }})"
-content_path = "./templates/recovery.html"
+content_path = "./supabase/templates/recovery.html"
 
 [functions.manage-staff]
 enabled = true
