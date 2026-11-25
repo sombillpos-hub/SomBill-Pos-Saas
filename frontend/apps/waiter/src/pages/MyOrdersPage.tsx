@@ -40,7 +40,10 @@ export default function MyOrdersPage() {
 
   const q = useQuery(async () => {
     const { fromIso, toIso } = rangeToIso(range, r.timezone);
-    const [orders, tables] = await Promise.all([fetchOrdersBetween(r.id, fromIso, toIso, uid), fetchTables(r.id)]);
+    const [orders, tables] = await Promise.all([
+      fetchOrdersBetween(r.id, fromIso, toIso, uid, true),
+      fetchTables(r.id),
+    ]);
     const items = itemsByOrder(await fetchItemsFor(orders.map((o) => o.id)));
     const custIds = [...new Set(orders.map((o) => o.customer_id).filter(Boolean))] as string[];
     const customers = custIds.length
@@ -81,7 +84,20 @@ export default function MyOrdersPage() {
     );
 
   const columns: Column<Order>[] = [
-    { key: 'no', header: 'Order', cell: (o) => <b>#{o.order_number}</b> },
+    {
+      key: 'no',
+      header: 'Order',
+      cell: (o) => (
+        <span className="inline-flex items-center gap-1.5">
+          <b>#{o.order_number}</b>
+          {o.waiter_id === null && (
+            <span className="rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-orange-700">
+              QR
+            </span>
+          )}
+        </span>
+      ),
+    },
     { key: 'table', header: 'Table', cell: (o) => (o.table_id ? (q.data?.tables.get(o.table_id) ?? '—') : '—') },
     {
       key: 'cust',

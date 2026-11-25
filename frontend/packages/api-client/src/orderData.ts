@@ -13,7 +13,13 @@ export const fetchActiveOrders = (rid: string) =>
       .range(a, b),
   );
 
-export const fetchOrdersBetween = (rid: string, fromIso: string, toIso: string, waiterId?: string) =>
+export const fetchOrdersBetween = (
+  rid: string,
+  fromIso: string,
+  toIso: string,
+  waiterId?: string,
+  includeUnassigned = false,
+) =>
   fetchAll<Order>((a, b) => {
     let q = supabase
       .from('orders')
@@ -21,7 +27,9 @@ export const fetchOrdersBetween = (rid: string, fromIso: string, toIso: string, 
       .eq('restaurant_id', rid)
       .gte('created_at', fromIso)
       .lt('created_at', toIso);
-    if (waiterId) q = q.eq('waiter_id', waiterId);
+    if (waiterId) {
+      q = includeUnassigned ? q.or(`waiter_id.eq.${waiterId},waiter_id.is.null`) : q.eq('waiter_id', waiterId);
+    }
     return q.order('created_at', { ascending: false }).range(a, b);
   });
 

@@ -2329,6 +2329,22 @@ export type Database = {
         };
         Returns: Json;
       };
+      place_qr_table_order: {
+        Args: {
+          p_guest_name?: string | null;
+          p_items: Json;
+          p_notes?: string | null;
+          p_table_id: string;
+        };
+        Returns: Json;
+      };
+      call_table_waiter: {
+        Args: {
+          p_reason?: string | null;
+          p_table_id: string;
+        };
+        Returns: Json;
+      };
       touch_last_login: {
         Args: Record<PropertyKey, never>;
         Returns: undefined;

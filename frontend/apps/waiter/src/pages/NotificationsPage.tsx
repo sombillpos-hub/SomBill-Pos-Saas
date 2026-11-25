@@ -16,6 +16,8 @@ import { useToast } from '@sombill/shared-ui/ui/Toast';
 import { fetchNotifications } from '@sombill/api-client/orderData';
 
 const TYPE_DOT: Record<string, string> = {
+  qr_order: 'bg-brand-red',
+  waiter_call: 'bg-amber-500',
   order_ready: 'bg-emerald-500',
   payment_completed: 'bg-emerald-500',
   order_cancelled: 'bg-brand-red',

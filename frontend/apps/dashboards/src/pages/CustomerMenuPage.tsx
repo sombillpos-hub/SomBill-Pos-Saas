@@ -17,7 +17,7 @@ import {
   X,
 } from 'lucide-react';
 import { useQuery } from '@sombill/shared-hooks/useQuery';
-import { supabase } from '@sombill/api-client/supabase';
+import { friendlyError, supabase } from '@sombill/api-client/supabase';
 import { formatMoney } from '@sombill/shared-utils/format';
 import { cn } from '@sombill/shared-utils/cn';
 import type { Category, Product, RestaurantTable } from '@sombill/shared-types/types';
@@ -28,8 +28,6 @@ interface CartEntry {
   product: Product;
   quantity: number;
 }
-
-const FALLBACK_RESTAURANT_ID = 'dev-restaurant-001';
 
 /**
  * Public Customer View Menu Dashboard (`/table-menu/:tableId` & `/table-menu`).
@@ -45,10 +43,12 @@ export default function CustomerMenuPage() {
   const [search, setSearch] = useState('');
   const [catId, setCatId] = useState<string>('');
   const [cart, setCart] = useState<Record<string, CartEntry>>({});
+  const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [guestName, setGuestName] = useState('');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [callingWaiter, setCallingWaiter] = useState(false);
   const [placedOrder, setPlacedOrder] = useState<{
     id: string;
     orderNumber: number;
@@ -58,18 +58,29 @@ export default function CustomerMenuPage() {
   } | null>(null);
 
   const q = useQuery(async () => {
-    const [tablesRes, catsRes, prodsRes] = await Promise.all([
-      supabase.from('restaurant_tables').select('*').is('archived_at', null),
-      supabase.from('categories').select('*').eq('is_active', true).is('archived_at', null).order('display_order'),
-      supabase.from('products').select('*').is('archived_at', null).order('name'),
-    ]);
+    const tablesRes = await supabase.from('restaurant_tables').select('*').is('archived_at', null);
     const tables = (tablesRes.data ?? []) as RestaurantTable[];
-    const categories = (catsRes.data ?? []) as Category[];
-    const products = (prodsRes.data ?? []) as Product[];
     const matchedTable =
       tables.find((t) => t.id === tableId) ??
       tables.find((t) => String(t.table_number) === params.get('table')) ??
       null;
+
+    let catsQuery = supabase
+      .from('categories')
+      .select('*')
+      .eq('is_active', true)
+      .is('archived_at', null)
+      .order('display_order');
+    let prodsQuery = supabase.from('products').select('*').is('archived_at', null).order('name');
+
+    if (matchedTable?.restaurant_id) {
+      catsQuery = catsQuery.eq('restaurant_id', matchedTable.restaurant_id);
+      prodsQuery = prodsQuery.eq('restaurant_id', matchedTable.restaurant_id);
+    }
+
+    const [catsRes, prodsRes] = await Promise.all([catsQuery, prodsQuery]);
+    const categories = (catsRes.data ?? []) as Category[];
+    const products = (prodsRes.data ?? []) as Product[];
     return { matchedTable, categories, products };
   }, [tableId]);
 
@@ -118,73 +129,75 @@ export default function CustomerMenuPage() {
     });
   };
 
-  const callWaiter = () => {
-    toast.success(`Waiter notified for Table #${tableNumber}! Someone is on the way.`);
+  const resolvedTableId = q.data?.matchedTable?.id ?? tableId ?? null;
+
+  const callWaiter = async (reason?: string) => {
+    if (callingWaiter) return;
+    setCallingWaiter(true);
+    try {
+      if (resolvedTableId) {
+        const { error } = await supabase.rpc('call_table_waiter', {
+          p_table_id: resolvedTableId,
+          p_reason: reason ?? null,
+        });
+        if (error) throw error;
+      }
+      toast.success(
+        reason
+          ? `Bill request sent to waiter for Table #${tableNumber}.`
+          : `Waiter notified for Table #${tableNumber}! Someone is on the way.`,
+      );
+    } catch (e) {
+      toast.error(friendlyError(e));
+    } finally {
+      setCallingWaiter(false);
+    }
   };
 
   const sendOrder = async () => {
     if (!cartItems.length) return;
+    if (!resolvedTableId) {
+      toast.error('Table QR link is missing a valid table. Please scan the table QR code again.');
+      return;
+    }
     setSubmitting(true);
     try {
-      const restaurantId =
-        q.data?.matchedTable?.restaurant_id ?? allProducts[0]?.restaurant_id ?? FALLBACK_RESTAURANT_ID;
-      const orderNote = [guestName.trim() ? `Guest: ${guestName.trim()}` : '', notes.trim()]
-        .filter(Boolean)
-        .join(' · ');
+      const { data, error } = await supabase.rpc('place_qr_table_order', {
+        p_table_id: resolvedTableId,
+        p_items: cartItems.map((c) => ({
+          product_id: c.product.id,
+          quantity: c.quantity,
+        })),
+        p_guest_name: guestName.trim() || null,
+        p_notes: notes.trim() || null,
+      });
 
-      const { data: created } = await supabase
-        .from('orders')
-        .insert({
-          restaurant_id: restaurantId,
-          order_type: 'dine_in',
-          table_id: q.data?.matchedTable?.id ?? tableId ?? null,
-          status: 'new',
-          payment_status: 'unpaid',
-          subtotal: Number(subtotal.toFixed(2)),
-          discount_amount: 0,
-          tax_amount: Number(tax.toFixed(2)),
-          tax_rate: taxRate,
-          tax_inclusive: false,
-          total: Number(total.toFixed(2)),
-          amount_paid: 0,
-          amount_refunded: 0,
-          guest_count: 1,
-          notes: orderNote || `QR Self-Order · Table #${tableNumber}`,
-        })
-        .select('*')
-        .single();
+      if (error) throw error;
 
-      const orderId = (created as { id?: string; order_number?: number } | null)?.id ?? `qr-${Date.now()}`;
-      const orderNumber =
-        (created as { order_number?: number } | null)?.order_number ?? Math.floor(1050 + Math.random() * 900);
-
-      if (created && orderId) {
-        await supabase.from('order_items').insert(
-          cartItems.map((c) => ({
-            restaurant_id: restaurantId,
-            order_id: orderId,
-            product_id: c.product.id,
-            product_name: c.product.name,
-            quantity: c.quantity,
-            unit_price: Number(c.product.price),
-            is_voided: false,
-          })),
-        );
-      }
+      const result = data as {
+        order_id: string;
+        order_number: number;
+        total: number;
+        appended?: boolean;
+      };
 
       setPlacedOrder({
-        id: orderId,
-        orderNumber,
-        total,
+        id: result.order_id,
+        orderNumber: result.order_number,
+        total: Number(result.total ?? total),
         itemCount: cartCount,
         placedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       });
       setCart({});
       setNotes('');
       setDrawerOpen(false);
-      toast.success(`Order #${orderNumber} sent to the kitchen for Table #${tableNumber}!`);
-    } catch {
-      toast.error('Could not send order. Please call a waiter for assistance.');
+      toast.success(
+        result.appended
+          ? `Items added to Order #${result.order_number} · Your waiter has been notified!`
+          : `Order #${result.order_number} sent to your waiter & kitchen for Table #${tableNumber}!`,
+      );
+    } catch (e) {
+      toast.error(friendlyError(e) || 'Could not send order. Please call a waiter for assistance.');
     } finally {
       setSubmitting(false);
     }
@@ -236,9 +249,10 @@ export default function CustomerMenuPage() {
           <div className="flex shrink-0 items-center gap-2">
             <button
               type="button"
-              onClick={callWaiter}
+              disabled={callingWaiter}
+              onClick={() => void callWaiter()}
               className={cn(
-                'inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-xs font-bold transition',
+                'inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-xs font-bold transition disabled:opacity-60',
                 dark
                   ? 'border-orange-500/30 bg-orange-500/15 text-orange-200 hover:bg-orange-500/25'
                   : 'border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100',
@@ -334,8 +348,9 @@ export default function CustomerMenuPage() {
             <Button
               size="sm"
               variant="secondary"
+              loading={callingWaiter}
               icon={<Receipt className="h-4 w-4" />}
-              onClick={() => toast.success(`Bill request sent to Cashier for Table #${tableNumber}.`)}
+              onClick={() => void callWaiter(`Guest at Table #${tableNumber} requested the bill.`)}
             >
               Request Bill
             </Button>
@@ -406,11 +421,12 @@ export default function CustomerMenuPage() {
             {filteredProducts.map((p) => {
               const qty = cart[p.id]?.quantity ?? 0;
               const available = p.is_available !== false;
+              const showImage = Boolean(p.image_url && !brokenImages[p.id]);
               return (
                 <article
                   key={p.id}
                   className={cn(
-                    'group relative flex flex-col justify-between overflow-hidden rounded-2xl border p-4 transition-all duration-200',
+                    'group relative flex flex-col justify-between overflow-hidden rounded-2xl border transition-all duration-200',
                     dark
                       ? 'border-white/10 bg-[#14080c]/85 hover:border-orange-500/40'
                       : 'border-slate-200/80 bg-white/95 shadow-sm hover:-translate-y-0.5 hover:border-orange-300 hover:shadow-lg',
@@ -418,33 +434,59 @@ export default function CustomerMenuPage() {
                   )}
                 >
                   <div>
-                    <div className="flex items-start justify-between gap-3">
+                    <div
+                      className={cn(
+                        'relative aspect-[16/10] w-full overflow-hidden',
+                        dark
+                          ? 'bg-gradient-to-br from-[#230c12] to-[#120508]'
+                          : 'bg-gradient-to-br from-orange-50 via-amber-50/70 to-rose-50',
+                      )}
+                    >
+                      {showImage ? (
+                        <img
+                          src={p.image_url!}
+                          alt={p.name}
+                          loading="lazy"
+                          onError={() => setBrokenImages((prev) => ({ ...prev, [p.id]: true }))}
+                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 text-orange-400/70">
+                          <UtensilsCrossed className="h-8 w-8" />
+                          <span className="text-[10px] font-bold uppercase tracking-widest opacity-70">
+                            {catNameOf(p.category_id)}
+                          </span>
+                        </div>
+                      )}
                       <span
                         className={cn(
-                          'inline-block rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider',
-                          dark ? 'bg-orange-500/15 text-orange-300' : 'bg-orange-50 text-orange-700',
+                          'absolute left-3 top-3 inline-block rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider shadow-sm backdrop-blur-md',
+                          dark ? 'bg-black/65 text-orange-300' : 'bg-white/90 text-orange-700',
                         )}
                       >
                         {catNameOf(p.category_id)}
                       </span>
-                      <span className="font-mono text-base font-black text-[#dc2626] dark:text-amber-300">
+                      <span className="absolute right-3 top-3 rounded-lg bg-gradient-to-r from-[#dc2626] to-[#f97316] px-2.5 py-1 font-mono text-xs font-black text-white shadow">
                         {formatMoney(Number(p.price), currency)}
                       </span>
                     </div>
-                    <h2 className="mt-2.5 text-base font-extrabold leading-snug">{p.name}</h2>
-                    {p.description && (
-                      <p
-                        className={cn(
-                          'mt-1 line-clamp-2 text-xs leading-relaxed',
-                          dark ? 'text-slate-400' : 'text-slate-500',
-                        )}
-                      >
-                        {p.description}
-                      </p>
-                    )}
+
+                    <div className="p-4 pb-0">
+                      <h2 className="text-base font-extrabold leading-snug">{p.name}</h2>
+                      {p.description && (
+                        <p
+                          className={cn(
+                            'mt-1 line-clamp-2 text-xs leading-relaxed',
+                            dark ? 'text-slate-400' : 'text-slate-500',
+                          )}
+                        >
+                          {p.description}
+                        </p>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="mt-4 flex items-center justify-between border-t border-dashed border-slate-200/70 pt-3 dark:border-white/10">
+                  <div className="mt-4 flex items-center justify-between border-t border-dashed border-slate-200/70 px-4 py-3 dark:border-white/10">
                     <span
                       className={cn(
                         'text-[11px] font-semibold',
@@ -552,11 +594,24 @@ export default function CustomerMenuPage() {
               <ul className="divide-y divide-slate-200/70 dark:divide-white/10">
                 {cartItems.map(({ product, quantity }) => (
                   <li key={product.id} className="flex items-center justify-between gap-3 py-3">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-bold">{product.name}</p>
-                      <p className="font-mono text-xs text-slate-500">
-                        {formatMoney(Number(product.price), currency)} × {quantity}
-                      </p>
+                    <div className="flex min-w-0 items-center gap-3">
+                      {product.image_url && !brokenImages[product.id] ? (
+                        <img
+                          src={product.image_url}
+                          alt={product.name}
+                          className="h-11 w-11 shrink-0 rounded-xl object-cover ring-1 ring-slate-200/80 dark:ring-white/10"
+                        />
+                      ) : (
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-500 dark:bg-white/5">
+                          <UtensilsCrossed className="h-4 w-4" />
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold">{product.name}</p>
+                        <p className="font-mono text-xs text-slate-500">
+                          {formatMoney(Number(product.price), currency)} × {quantity}
+                        </p>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <button

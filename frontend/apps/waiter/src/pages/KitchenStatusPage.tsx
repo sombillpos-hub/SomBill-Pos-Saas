@@ -38,7 +38,7 @@ export default function KitchenStatusPage() {
   }, [r.id]);
   useRealtime(['orders', 'order_items'], r.id, () => void q.reload(), { debounceMs: 250 });
 
-  const orders = (q.data?.orders ?? []).filter((o) => !mineOnly || o.waiter_id === uid);
+  const orders = (q.data?.orders ?? []).filter((o) => !mineOnly || o.waiter_id === uid || o.waiter_id === null);
   const col = (s: OrderStatus) =>
     orders
       .filter((o) => (s === 'new' ? o.status === 'new' || o.status === 'pending' : o.status === s))

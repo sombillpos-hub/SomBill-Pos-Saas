@@ -46,12 +46,12 @@ export default function WaiterDashboardPage() {
     const { fromIso, toIso } = rangeToIso(presetRange('today', r.timezone), r.timezone);
     const [active, today, tables, notes, shift] = await Promise.all([
       fetchActiveOrders(r.id),
-      fetchOrdersBetween(r.id, fromIso, toIso, uid),
+      fetchOrdersBetween(r.id, fromIso, toIso, uid, true),
       fetchTableStatus(r.id),
       fetchNotifications(uid, 8),
       fetchOpenShift(r.id, uid),
     ]);
-    const mine = active.filter((o) => o.waiter_id === uid);
+    const mine = active.filter((o) => o.waiter_id === uid || o.waiter_id === null);
     return {
       mine,
       shift,
