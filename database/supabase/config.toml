@@ -52,11 +52,13 @@ allowed_mime_types = ["image/png", "image/jpeg", "image/webp", "application/pdf"
 
 [auth]
 enabled = true
-site_url = "https://sombill-pos-saas-frontend.vercel.app"
+site_url = "https://sombill.com"
 additional_redirect_urls = [
+  "https://sombill.com/**",
+  "https://www.sombill.com/**",
+  "https://sombill.com/reset-password",
+  "https://sombill.com/login",
   "https://sombill-pos-saas-frontend.vercel.app/**",
-  "https://sombill-pos-saas-frontend.vercel.app/reset-password",
-  "https://sombill-pos-saas-frontend.vercel.app/login",
   "http://localhost:3000/reset-password",
   "http://localhost:3000/login",
   "https://staging.sombill.com/reset-password",
