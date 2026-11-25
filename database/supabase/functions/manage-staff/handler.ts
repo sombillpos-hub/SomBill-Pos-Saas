@@ -21,6 +21,11 @@ export interface StaffBackend {
   countActiveManagers(restaurantId: string): Promise<number>;
   findUserIdByEmail(email: string): Promise<string | null>;
   inviteUser(email: string, meta: { full_name: string; phone: string | null }, redirectTo?: string): Promise<string>;
+  createUserWithPassword?(
+    email: string,
+    password: string,
+    meta: { full_name: string; phone: string | null },
+  ): Promise<string>;
   upsertProfile(userId: string, patch: { full_name: string; phone: string | null; email: string }): Promise<void>;
   insertMember(m: Omit<Member, 'id'>): Promise<Member>;
   updateMember(memberId: string, patch: Partial<Pick<Member, 'role' | 'status'>>): Promise<Member>;
@@ -108,12 +113,17 @@ export async function handleStaffAction(
       if (phone && !PHONE_RE.test(phone)) throw new HttpError(400, 'Phone is invalid');
       const role = b.role as Role;
       if (!ROLES.includes(role)) throw new HttpError(400, 'Role is invalid');
+      const password = str(b.password, 'Password', { optional: true, min: 6, max: 128 });
 
       let userId = await db.findUserIdByEmail(email);
       let invited = false;
+      let createdWithPassword = false;
       if (userId) {
         const existing = await db.findMembership(restaurantId, userId);
         if (existing) throw new HttpError(409, 'This person is already a staff member of this restaurant');
+      } else if (password && db.createUserWithPassword) {
+        userId = await db.createUserWithPassword(email, password, { full_name: fullName, phone });
+        createdWithPassword = true;
       } else {
         userId = await db.inviteUser(
           email,
@@ -130,9 +140,9 @@ export async function handleStaffAction(
         action: 'staff_create',
         entity_id: member.id,
         old_data: null,
-        new_data: { email, role, invited },
+        new_data: { email, role, invited, created_with_password: createdWithPassword },
       });
-      return { status: 201, data: { member, invited } };
+      return { status: 201, data: { member, invited, created_with_password: createdWithPassword } };
     }
 
     case 'update_role':

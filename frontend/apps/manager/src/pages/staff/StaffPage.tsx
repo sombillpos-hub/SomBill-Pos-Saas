@@ -324,6 +324,7 @@ function CreateStaffModal({
 }) {
   const toast = useToast();
   const [serverError, setServerError] = useState<string | null>(null);
+  const [password, setPassword] = useState('');
   const {
     register,
     handleSubmit,
@@ -335,6 +336,10 @@ function CreateStaffModal({
   const submit = async (raw: StaffForm) => {
     const v = staffSchema.parse(raw);
     setServerError(null);
+    if (password && password.length < 6) {
+      setServerError('Password must be at least 6 characters.');
+      return;
+    }
     try {
       const res = (await staffAction({
         action: 'create',
@@ -342,10 +347,17 @@ function CreateStaffModal({
         full_name: v.full_name,
         email: v.email.toLowerCase(),
         phone: nullIfEmpty(v.phone),
+        password: password || undefined,
         role: v.role,
         redirect_to: `${window.location.origin}/reset-password`,
-      })) as { invited?: boolean };
-      toast.success(res?.invited ? `Invitation emailed to ${v.email}.` : `${v.full_name} added to your restaurant.`);
+      })) as { invited?: boolean; created_with_password?: boolean };
+      toast.success(
+        res?.created_with_password
+          ? `${v.full_name} created with instant login credentials.`
+          : res?.invited
+            ? `Invitation emailed to ${v.email}.`
+            : `${v.full_name} added to your restaurant.`,
+      );
       await onDone();
     } catch (e) {
       setServerError(e instanceof Error ? e.message : String(e));
@@ -378,12 +390,20 @@ function CreateStaffModal({
         />
         <Input label="Email" type="email" {...register('email')} error={errors.email?.message} required />
         <Input label="Phone" type="tel" {...register('phone')} error={errors.phone?.message} placeholder="+252 63 …" />
-        <Select label="Role" {...register('role')} wrapClassName="sm:col-span-2">
+        <Select label="Role" {...register('role')}>
           <option value="waiter">Waiter</option>
           <option value="cashier">Cashier</option>
           <option value="kitchen">Kitchen</option>
           <option value="manager">Manager</option>
         </Select>
+        <Input
+          label="Initial password (optional)"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Min 6 chars (instant login)"
+          hint="Leave blank to email an invite"
+        />
         {serverError && (
           <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700 sm:col-span-2">
             {serverError}

@@ -15,7 +15,12 @@ const ALLOWED_ORIGINS = (Deno.env.get('ALLOWED_ORIGINS') ?? '')
   .filter(Boolean);
 
 function cors(origin: string | null): HeadersInit {
-  const allow = origin && ALLOWED_ORIGINS.includes(origin) ? origin : (ALLOWED_ORIGINS[0] ?? '');
+  const allow =
+    ALLOWED_ORIGINS.length === 0
+      ? (origin ?? '*')
+      : origin && ALLOWED_ORIGINS.includes(origin)
+        ? origin
+        : (ALLOWED_ORIGINS[0] ?? '*');
   return {
     'Access-Control-Allow-Origin': allow,
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -87,6 +92,16 @@ const backend: StaffBackend = {
   async inviteUser(email, meta, redirectTo) {
     const { data, error } = await admin.auth.admin.inviteUserByEmail(email, { data: meta, redirectTo });
     if (error || !data.user) throw new HttpError(400, error?.message ?? 'Could not invite user');
+    return data.user.id;
+  },
+  async createUserWithPassword(email, password, meta) {
+    const { data, error } = await admin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: meta,
+    });
+    if (error || !data.user) throw new HttpError(400, error?.message ?? 'Could not create user');
     return data.user.id;
   },
   async upsertProfile(userId, patch) {

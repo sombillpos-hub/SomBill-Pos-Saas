@@ -36,6 +36,7 @@ export default function UsersPage() {
     full_name: '',
     email: '',
     phone: '',
+    password: '',
     role: 'waiter' as AppRole,
   });
   const [busy, setBusy] = useState(false);
@@ -93,17 +94,26 @@ export default function UsersPage() {
   const send = async () => {
     setError(null);
     if (!form.restaurant_id) return setError('Choose a branch.');
+    if (form.password && form.password.length < 6) return setError('Password must be at least 6 characters.');
     setBusy(true);
     try {
       await staffAction({
         action: 'create',
-        ...form,
+        restaurant_id: form.restaurant_id,
+        full_name: form.full_name,
+        email: form.email,
+        role: form.role,
         phone: form.phone || undefined,
+        password: form.password || undefined,
         redirect_to: `${window.location.origin}/reset-password`,
       });
-      toast.success(`${form.full_name} added. An invitation email was sent if the account is new.`);
+      toast.success(
+        form.password
+          ? `${form.full_name} created with instant login credentials.`
+          : `${form.full_name} added. An invitation email was sent if the account is new.`,
+      );
       setInvite(false);
-      setForm({ ...form, full_name: '', email: '', phone: '' });
+      setForm({ ...form, full_name: '', email: '', phone: '', password: '' });
       await q.reload();
     } catch (e) {
       setError(friendlyError(e));
@@ -292,7 +302,14 @@ export default function UsersPage() {
             required
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
-            wrapClassName="sm:col-span-2"
+          />
+          <Input
+            label="Password (optional)"
+            type="password"
+            placeholder="Min 6 chars for instant login"
+            value={form.password}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
+            hint="Set a password for instant sign-in, or leave blank to email an invite"
           />
         </div>
         {error && (

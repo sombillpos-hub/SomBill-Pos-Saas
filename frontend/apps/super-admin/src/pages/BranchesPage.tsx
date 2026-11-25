@@ -7,14 +7,25 @@ import { Input } from '@sombill/shared-ui/ui/Field';
 import { useToast } from '@sombill/shared-ui/ui/Toast';
 import { friendlyError } from '@sombill/api-client/supabase';
 import { formatDuration, formatMoney, formatNumber } from '@sombill/shared-utils/format';
-import { createBranch, updateBranch } from '../services/hq';
+import { createBranch, staffAction, updateBranch } from '../services/hq';
 import { useHq } from '../features/HqContext';
 import { useSummary } from '../hooks/hq';
 import { useEnterBranch } from '../components/useEnterBranch';
 import { branchColor } from '../features/lib/colors';
 import type { Branch } from '../features/types';
 
-const EMPTY = { name: '', address: '', phone: '', currency: 'USD', timezone: 'Africa/Mogadishu', taxPct: '0' };
+const EMPTY = {
+  name: '',
+  address: '',
+  phone: '',
+  currency: 'USD',
+  timezone: 'Africa/Mogadishu',
+  taxPct: '0',
+  managerName: '',
+  managerEmail: '',
+  managerPhone: '',
+  managerPassword: '',
+};
 
 export default function BranchesPage() {
   const { org, branches, branchesLoading, branchesError, reloadBranches, refreshLive } = useHq();
@@ -39,9 +50,16 @@ export default function BranchesPage() {
     if (form.name.trim().length < 2) return setError('Branch name is too short.');
     if (!/^[A-Za-z]{3}$/.test(form.currency)) return setError('Currency must be a 3-letter code, e.g. USD.');
     if (!Number.isFinite(pct) || pct < 0 || pct >= 100) return setError('Tax must be between 0 and 99.99 %.');
+    const hasManager = Boolean(form.managerEmail.trim() || form.managerName.trim());
+    if (hasManager) {
+      if (form.managerName.trim().length < 2) return setError('Manager full name is required (at least 2 characters).');
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.managerEmail.trim())) return setError('Enter a valid manager email.');
+      if (form.managerPassword && form.managerPassword.length < 6)
+        return setError('Manager password must be at least 6 characters.');
+    }
     setBusy(true);
     try {
-      await createBranch(org.id, {
+      const branchId = await createBranch(org.id, {
         name: form.name.trim(),
         currency: form.currency.toUpperCase(),
         timezone: form.timezone.trim(),
@@ -49,7 +67,21 @@ export default function BranchesPage() {
         phone: form.phone.trim(),
         taxRate: pct / 100,
       });
-      toast.success(`${form.name.trim()} added to the group.`);
+      if (hasManager && branchId) {
+        await staffAction({
+          action: 'create',
+          restaurant_id: branchId,
+          full_name: form.managerName.trim(),
+          email: form.managerEmail.trim(),
+          phone: form.managerPhone.trim() || undefined,
+          password: form.managerPassword || undefined,
+          role: 'manager',
+          redirect_to: `${window.location.origin}/reset-password`,
+        });
+        toast.success(`${form.name.trim()} & Manager account (${form.managerEmail.trim()}) created!`);
+      } else {
+        toast.success(`${form.name.trim()} added to the group.`);
+      }
       setAdding(false);
       setForm(EMPTY);
       await after();
@@ -249,6 +281,41 @@ export default function BranchesPage() {
             onChange={(e) => setForm({ ...form, timezone: e.target.value })}
             wrapClassName="sm:col-span-2"
             hint="e.g. Africa/Mogadishu"
+          />
+          <div className="mt-2 border-t border-slate-200 pt-3 dark:border-white/10 sm:col-span-2">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Assign Branch Manager Login (Optional)
+            </p>
+            <p className="mt-0.5 text-xs text-slate-500">
+              Create the manager login immediately so they can sign in and run this business.
+            </p>
+          </div>
+          <Input
+            label="Manager full name"
+            placeholder="e.g. Mohamed Ali"
+            value={form.managerName}
+            onChange={(e) => setForm({ ...form, managerName: e.target.value })}
+          />
+          <Input
+            label="Manager phone"
+            placeholder="+252 63 ..."
+            value={form.managerPhone}
+            onChange={(e) => setForm({ ...form, managerPhone: e.target.value })}
+          />
+          <Input
+            label="Manager email"
+            type="email"
+            placeholder="manager@business.com"
+            value={form.managerEmail}
+            onChange={(e) => setForm({ ...form, managerEmail: e.target.value })}
+          />
+          <Input
+            label="Initial password"
+            type="password"
+            placeholder="Min 6 chars (instant login)"
+            value={form.managerPassword}
+            onChange={(e) => setForm({ ...form, managerPassword: e.target.value })}
+            hint="Leave blank to send an email invite instead"
           />
         </div>
         {error && (
