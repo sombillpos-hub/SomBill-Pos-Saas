@@ -11,6 +11,7 @@
     "dev:website": "npm --prefix frontend/apps/website run dev",
     "dev:dashboards": "npm --prefix frontend/apps/dashboards run dev",
     "dev:backend": "npm --prefix backend run dev",
+    "print-bridge": "node scripts/thermal-print-bridge.mjs",
     "build": "npm --prefix frontend run build",
     "build:all": "npm --prefix frontend run build && npm run build:backend",
     "build:website": "npm --prefix frontend/apps/website run build",

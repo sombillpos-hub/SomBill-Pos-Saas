@@ -12,6 +12,7 @@ import { CartProvider, useCart } from '@sombill/shared-hooks/cart';
 import { CASHIER_NAV } from './navigation';
 import { useOpenShift } from '../hooks/useShift';
 import { ShiftPill } from '../components/ShiftPill';
+import { PrinterPill } from '../components/PrinterPill';
 import { CashierStatusBar } from '../components/CashierStatusBar';
 
 export function CashierLayout() {
@@ -94,7 +95,12 @@ function CashierShell() {
           onClick: () => navigate('/cashier/profile'),
         },
       ]}
-      topbarExtra={<ShiftPill shift={open.shift} loading={open.loading && !open.data} timeZone={r.timezone} />}
+      topbarExtra={
+        <div className="flex items-center gap-2">
+          <PrinterPill />
+          <ShiftPill shift={open.shift} loading={open.loading && !open.data} timeZone={r.timezone} />
+        </div>
+      }
       statusBar={<CashierStatusBar shift={open.shift} timeZone={r.timezone} />}
     />
   );

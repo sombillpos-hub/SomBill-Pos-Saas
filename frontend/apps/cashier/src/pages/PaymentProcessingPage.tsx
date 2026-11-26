@@ -17,18 +17,45 @@ import { Button } from '@sombill/shared-ui/ui/Button';
 import { ConfirmDialog } from '@sombill/shared-ui/ui/ConfirmDialog';
 import { useToast } from '@sombill/shared-ui/ui/Toast';
 import { fetchOrderBundle, printDocument } from '../services/data';
+import { fetchReceiptData } from '../hooks/useReceiptData';
+import { thermalPrinter } from '../services/thermalPrinter';
 import { PaymentPanel } from '../components/PaymentPanel';
 import { useOpenShift } from '../hooks/useShift';
 
-export async function printReceiptFor(orderId: string, toast: { error: (m: string) => void }) {
+export async function printReceiptFor(
+  orderId: string,
+  toast: { error: (m: string) => void; success?: (m: string) => void },
+) {
   const { data, error } = await supabase.rpc('issue_receipt', { p_order: orderId });
   if (error) {
     toast.error(friendlyError(error));
     return;
   }
-  const rec = data as { receipt_id: string };
+  const rec = data as { receipt_id: string; receipt_number?: number };
+  const snap = thermalPrinter.getSnapshot();
+
+  // Direct hardware thermal print (USB, Serial, Bluetooth, or LAN) — zero browser popup
+  if (thermalPrinter.isDirectHardwareReady()) {
+    try {
+      const receiptData = await fetchReceiptData('receipt', orderId, undefined, '—', rec.receipt_number ?? null);
+      if (receiptData) {
+        await thermalPrinter.printReceiptDirect(receiptData);
+        await supabase.rpc('mark_receipt_printed', { p_receipt: rec.receipt_id });
+        toast.success?.(
+          `Receipt${rec.receipt_number ? ` #${rec.receipt_number}` : ''} printed on ${snap.deviceName ?? 'thermal printer'}.`,
+        );
+        return;
+      }
+    } catch (e) {
+      toast.error(
+        `Direct thermal print failed (${e instanceof Error ? e.message : String(e)}). Falling back to system print.`,
+      );
+    }
+  }
+
   await supabase.rpc('mark_receipt_printed', { p_receipt: rec.receipt_id });
-  await printDocument(`/cashier-print/receipt/${orderId}`);
+  const widthParam = snap.settings.paperWidth === 58 ? '?width=58' : '';
+  await printDocument(`/cashier-print/receipt/${orderId}${widthParam}`);
 }
 
 export default function PaymentProcessingPage() {

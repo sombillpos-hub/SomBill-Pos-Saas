@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Download, Printer, Usb } from 'lucide-react';
+import { Download, Printer, Settings2 } from 'lucide-react';
 import { useRestaurant } from '@sombill/shared-hooks/AuthContext';
 import { useQuery } from '@sombill/shared-hooks/useQuery';
 import { useRealtime } from '@sombill/shared-hooks/useRealtime';
@@ -15,8 +15,10 @@ import { DateRangeFilter, SearchInput } from '@sombill/shared-ui/ui/Filters';
 import { Button } from '@sombill/shared-ui/ui/Button';
 import { useToast } from '@sombill/shared-ui/ui/Toast';
 import { ReceiptView } from '../components/ReceiptView';
+import { PrinterSetupModal } from '../components/PrinterSetupModal';
 import { useReceiptData } from '../hooks/useReceiptData';
-import { downloadEscPos, encodeReceipt, sendToSerialPrinter } from '../services/escpos';
+import { useThermalPrinter } from '../hooks/useThermalPrinter';
+import { downloadEscPos, encodeReceiptWithOptions } from '../services/escpos';
 import { printReceiptFor } from './PaymentProcessingPage';
 
 export default function ReceiptsPage() {
@@ -26,6 +28,8 @@ export default function ReceiptsPage() {
   const orderId = params.get('order');
   const [range, setRange] = useState<DateRange>(() => presetRange('today', r.timezone));
   const [search, setSearch] = useState('');
+  const [printerModalOpen, setPrinterModalOpen] = useState(false);
+  const printer = useThermalPrinter();
   const q = useQuery(async () => {
     const { fromIso, toIso } = rangeToIso(range, r.timezone);
     const paid = await fetchAll<Pick<Payment, 'order_id'>>((a, b) =>
@@ -76,9 +80,18 @@ export default function ReceiptsPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Ledger & Cash · 80mm Thermal"
+        eyebrow={`Ledger & Cash · ${printer.settings.paperWidth}mm Thermal`}
         title="Receipts"
-        description="80mm thermal receipts for paid orders. Reprints are counted and marked on the receipt."
+        description="Direct hardware thermal printing (USB, Serial, Bluetooth, LAN) and system driver receipts. Reprints are counted and marked."
+        actions={
+          <Button
+            variant="secondary"
+            icon={<Settings2 className="h-4 w-4" />}
+            onClick={() => setPrinterModalOpen(true)}
+          >
+            {printer.deviceName ? `Printer: ${printer.deviceName}` : 'Connect Thermal Printer'}
+          </Button>
+        }
       />
       {q.error ? (
         <div className="card">
@@ -137,15 +150,21 @@ export default function ReceiptsPage() {
               </ul>
             )}
           </Card>
-          <Card title="Preview (80mm)" className="h-fit lg:sticky lg:top-20">
+          <Card title={`Preview (${printer.settings.paperWidth}mm)`} className="h-fit lg:sticky lg:top-20">
             {!orderId ? (
               <p className="text-sm text-slate-500">Select an order to preview its receipt.</p>
             ) : (
-              <Preview orderId={orderId} onPrinted={() => void q.reload()} toast={toast} />
+              <Preview
+                orderId={orderId}
+                onPrinted={() => void q.reload()}
+                onOpenPrinterSetup={() => setPrinterModalOpen(true)}
+                toast={toast}
+              />
             )}
           </Card>
         </div>
       )}
+      <PrinterSetupModal open={printerModalOpen} onClose={() => setPrinterModalOpen(false)} />
     </div>
   );
 }
@@ -153,15 +172,18 @@ export default function ReceiptsPage() {
 function Preview({
   orderId,
   onPrinted,
+  onOpenPrinterSetup,
   toast,
 }: {
   orderId: string;
   onPrinted: () => void;
+  onOpenPrinterSetup: () => void;
   toast: ReturnType<typeof useToast>;
 }) {
   const d = useReceiptData('receipt', orderId);
+  const printer = useThermalPrinter();
   const [busy, setBusy] = useState(false);
-  const serial = typeof navigator !== 'undefined' && 'serial' in navigator;
+  const isHw = printer.settings.transport !== 'browser' && printer.connected;
   const ensure = async () => {
     const { data, error } = await supabase.rpc('issue_receipt', { p_order: orderId });
     if (error) {
@@ -181,23 +203,19 @@ function Preview({
       setBusy(false);
     }
   };
-  const escpos = async (mode: 'download' | 'serial') => {
+  const downloadRaw = async () => {
     const rec = await ensure();
     if (!rec || !d.data) return;
-    const bytes = encodeReceipt({ ...d.data, receiptNumber: rec.receipt_number });
-    if (mode === 'download') downloadEscPos(bytes, `receipt-${rec.receipt_number}.bin`);
-    else {
-      try {
-        const ok = await sendToSerialPrinter(bytes);
-        if (ok) {
-          await supabase.rpc('mark_receipt_printed', { p_receipt: rec.receipt_id });
-          toast.success('Sent to the printer.');
-          onPrinted();
-        }
-      } catch (e) {
-        toast.error(`Printer: ${e instanceof Error ? e.message : String(e)}`);
-      }
-    }
+    const bytes = encodeReceiptWithOptions(
+      { ...d.data, receiptNumber: rec.receipt_number },
+      {
+        paperWidth: printer.settings.paperWidth,
+        cut: printer.settings.cut,
+        copies: printer.settings.copies,
+        beep: printer.settings.beepOnPrint,
+      },
+    );
+    downloadEscPos(bytes, `receipt-${rec.receipt_number}.bin`);
   };
   if (d.loading && !d.data) return <Skeleton className="h-96 w-full" />;
   if (!d.data) return <EmptyState title="Receipt unavailable" />;
@@ -205,7 +223,7 @@ function Preview({
     <div className="space-y-3">
       <div className="max-h-[60vh] overflow-y-auto rounded-lg border border-dashed border-slate-300 bg-slate-100 py-3">
         <div className="shadow-sm">
-          <ReceiptView d={d.data} />
+          <ReceiptView d={d.data} paperWidth={printer.settings.paperWidth} />
         </div>
       </div>
       <Button
@@ -215,31 +233,36 @@ function Preview({
         loading={busy}
         onClick={() => void print()}
       >
-        {d.data.receiptNumber ? 'Reprint receipt' : 'Issue & print receipt'}
+        {isHw
+          ? d.data.receiptNumber
+            ? `Direct reprint (${printer.settings.transport.toUpperCase()})`
+            : `Issue & direct print (${printer.settings.transport.toUpperCase()})`
+          : d.data.receiptNumber
+            ? 'Reprint receipt'
+            : 'Issue & print receipt'}
       </Button>
       <div className="grid grid-cols-2 gap-2">
         <Button
           variant="secondary"
           className="h-11"
-          icon={<Download className="h-4 w-4" />}
-          onClick={() => void escpos('download')}
+          icon={<Settings2 className="h-4 w-4" />}
+          onClick={onOpenPrinterSetup}
         >
-          ESC/POS file
+          Printer setup
         </Button>
         <Button
           variant="secondary"
           className="h-11"
-          icon={<Usb className="h-4 w-4" />}
-          disabled={!serial}
-          onClick={() => void escpos('serial')}
+          icon={<Download className="h-4 w-4" />}
+          onClick={() => void downloadRaw()}
         >
-          USB/serial printer
+          ESC/POS file
         </Button>
       </div>
       <p className="text-xs text-slate-500">
-        Browser print works with any installed thermal printer driver (80mm paper). Direct ESC/POS output is provided
-        for USB-serial printers in Chrome/Edge{serial ? '' : ' (not available in this browser)'} and has not yet been
-        tested on a physical printer.
+        {isHw
+          ? `Connected directly to ${printer.deviceName} (${printer.settings.paperWidth}mm). Printing sends raw ESC/POS straight to the hardware.`
+          : `Using System Driver (${printer.settings.paperWidth}mm). Click Printer setup to connect a USB, Serial, Bluetooth, or LAN thermal printer directly.`}
       </p>
     </div>
   );

@@ -347,7 +347,7 @@ function CreateStaffModal({
         full_name: v.full_name,
         email: v.email.toLowerCase(),
         phone: nullIfEmpty(v.phone),
-        password: password || undefined,
+        ...(password ? { password } : {}),
         role: v.role,
         redirect_to: `${window.location.origin}/reset-password`,
       })) as { invited?: boolean; created_with_password?: boolean };

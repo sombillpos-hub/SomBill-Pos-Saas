@@ -12,6 +12,7 @@ import type { DocKind } from '../features/receiptModel';
 export default function PrintPage() {
   const { kind = 'receipt', id = '' } = useParams();
   const [params] = useSearchParams();
+  const paperWidth: 80 | 58 = params.get('width') === '58' ? 58 : 80;
   const q = useReceiptData(kind as DocKind, id);
   const ref = useRef<HTMLDivElement>(null);
   const printed = useRef(false);
@@ -25,9 +26,9 @@ export default function PrintPage() {
       style.id = 'sombill-page-size';
       document.head.appendChild(style);
     }
-    style.textContent = `@page { size: 80mm ${mm}mm; margin: 0; } html, body { width: 80mm; margin: 0 !important; padding: 0 !important; background: #fff !important; }`;
+    style.textContent = `@page { size: ${paperWidth}mm ${mm}mm; margin: 0; } html, body { width: ${paperWidth}mm; margin: 0 !important; padding: 0 !important; background: #fff !important; }`;
     document.body.dataset.receiptHeightMm = String(mm);
-  }, [q.data]);
+  }, [q.data, paperWidth]);
 
   useEffect(() => {
     if (!q.data || params.get('autoprint') !== '1' || printed.current) return;
@@ -43,8 +44,8 @@ export default function PrintPage() {
   if (q.loading) return <p className="p-4 font-mono text-sm">Preparing…</p>;
   if (q.error || !q.data) return <p className="p-4 font-mono text-sm">Could not load this document. {q.error}</p>;
   return (
-    <div ref={ref} className="w-[80mm] bg-white">
-      <ReceiptView d={q.data} />
+    <div ref={ref} className={`${paperWidth === 58 ? 'w-[58mm]' : 'w-[80mm]'} bg-white`}>
+      <ReceiptView d={q.data} paperWidth={paperWidth} />
     </div>
   );
 }

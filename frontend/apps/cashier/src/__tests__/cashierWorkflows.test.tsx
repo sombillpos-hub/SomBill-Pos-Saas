@@ -721,7 +721,7 @@ describe('Transactions, receipts and dashboard', () => {
     const r = await screen.findByTestId('receipt');
     expect(r.getAttribute('style') ?? r.className).toMatch(/72mm|80mm/);
     expect(r).toHaveTextContent('Suqaar');
-    expect(screen.getByText(/has not yet been tested on a physical printer/)).toBeInTheDocument();
+    expect(screen.getByText(/USB, Serial, Bluetooth, or LAN thermal printer/)).toBeInTheDocument();
     await u.click(screen.getByRole('button', { name: /Issue & print receipt/ }));
     await waitFor(() =>
       expect(rpcCalls('mark_receipt_printed')).toEqual([['mark_receipt_printed', { p_receipt: 'rc1' }]]),

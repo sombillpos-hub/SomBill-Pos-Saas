@@ -12,8 +12,8 @@ const fmt = (n: number, cur: string) => {
   }
 };
 
-/** 80mm thermal layout (72mm printable). Used for preview and printing. */
-export function ReceiptView({ d }: { d: ReceiptData }) {
+/** 80mm (72mm printable) or 58mm (52mm printable) thermal layout. Used for preview and printing. */
+export function ReceiptView({ d, paperWidth = 80 }: { d: ReceiptData; paperWidth?: 80 | 58 }) {
   const [logoOk, setLogoOk] = useState(true);
   const m = (n: number) => fmt(n, d.restaurant.currency);
   const t = totals(d);
@@ -30,7 +30,9 @@ export function ReceiptView({ d }: { d: ReceiptData }) {
   );
   return (
     <div
-      className="receipt mx-auto w-[72mm] bg-white px-[3mm] py-[4mm] font-mono text-[11.5px] leading-[1.35] text-black"
+      className={`receipt mx-auto bg-white px-[3mm] py-[4mm] font-mono leading-[1.35] text-black ${
+        paperWidth === 58 ? 'w-[52mm] text-[10px]' : 'w-[72mm] text-[11.5px]'
+      }`}
       data-testid="receipt"
     >
       <div className="text-center">
