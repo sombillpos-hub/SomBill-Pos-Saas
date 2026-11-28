@@ -226,8 +226,12 @@ export default function NewSalePage() {
             ? 'Enter a reason'
             : null;
   const selectedTable = (tables.data ?? []).find((x) => x.id === cart.tableId);
-  const available = (tables.data ?? []).filter(
+  const allTables = tables.data ?? [];
+  const available = allTables.filter(
     (x) => x.status === 'available' || r.settings.tables.allow_multiple_orders,
+  );
+  const occupiedTables = allTables.filter(
+    (x) => x.status !== 'available' && !r.settings.tables.allow_multiple_orders,
   );
   const unavailable = cart.lines.filter((l) => {
     const p = menu.data?.products.find((x) => x.id === l.product_id);
@@ -572,10 +576,10 @@ export default function NewSalePage() {
 
         <aside id="sale-panel" aria-label="Current sale" className="scroll-mt-20 lg:sticky lg:top-4">
           <Card className="pos-ticket flex flex-col" bodyClassName="flex flex-col p-0">
-            <div className="space-y-3 border-b border-slate-100 p-4">
+            <div className="space-y-2.5 border-b border-slate-100 p-3.5">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-lg font-bold text-brand-navy">
+                  <h2 className="text-base font-bold text-brand-navy">
                     {addMode ? `Order #${ex?.order_number ?? '…'}` : 'Current order'}
                   </h2>
                   {cart.itemCount > 0 && (
@@ -616,7 +620,7 @@ export default function NewSalePage() {
                         aria-checked={cart.orderType === ty}
                         onClick={() => cart.setOrderType(ty)}
                         className={cn(
-                          'h-11 rounded-lg text-sm font-semibold',
+                          'h-10 rounded-lg text-sm font-semibold',
                           cart.orderType === ty ? 'bg-white text-brand-navy shadow' : 'text-slate-600',
                         )}
                       >
@@ -625,29 +629,69 @@ export default function NewSalePage() {
                     ))}
                   </div>
                   {cart.orderType === 'dine_in' && (
-                    <div className="grid grid-cols-[1fr_80px] gap-2">
-                      <select
-                        className="input h-12"
-                        aria-label="Table"
-                        value={cart.tableId ?? ''}
-                        onChange={(e) => cart.setTable(e.target.value || null)}
-                      >
-                        <option value="">Select table…</option>
-                        {available.map((x) => (
-                          <option key={x.id} value={x.id}>
-                            Table {x.table_number}
-                            {x.name ? ` · ${x.name}` : ''}
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        className="input h-12"
-                        inputMode="numeric"
-                        aria-label="Guests"
-                        placeholder="Guests"
-                        value={cart.guestCount}
-                        onChange={(e) => cart.setGuestCount(e.target.value)}
-                      />
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-[1fr_76px] gap-2">
+                        <select
+                          className="input h-11 font-semibold"
+                          aria-label="Table"
+                          value={cart.tableId ?? ''}
+                          onChange={(e) => {
+                            cart.setTable(e.target.value || null);
+                            setError(null);
+                          }}
+                        >
+                          <option value="">Select table…</option>
+                          {available.map((x) => (
+                            <option key={x.id} value={x.id}>
+                              Table {x.table_number}
+                              {x.name ? ` · ${x.name}` : ''} (Free)
+                            </option>
+                          ))}
+                          {occupiedTables.map((x) => (
+                            <option key={x.id} value={x.id}>
+                              Table {x.table_number}
+                              {x.name ? ` · ${x.name}` : ''} (Active{x.order_number ? ` #${x.order_number}` : ''})
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          className="input h-11"
+                          inputMode="numeric"
+                          aria-label="Guests"
+                          placeholder="Guests"
+                          value={cart.guestCount}
+                          onChange={(e) => cart.setGuestCount(e.target.value)}
+                        />
+                      </div>
+                      {allTables.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Quick select table">
+                          {allTables.map((tb) => {
+                            const active = cart.tableId === tb.id;
+                            const isFree = tb.status === 'available';
+                            return (
+                              <button
+                                key={tb.id}
+                                type="button"
+                                onClick={() => {
+                                  cart.setTable(tb.id);
+                                  setError(null);
+                                }}
+                                title={`Table ${tb.table_number} (${isFree ? 'Free' : `Active #${tb.order_number ?? ''}`})`}
+                                className={cn(
+                                  'inline-flex h-8 min-w-[38px] items-center justify-center rounded-lg border px-2 font-mono text-xs font-extrabold transition',
+                                  active
+                                    ? 'border-brand-orange bg-brand-orange text-white shadow-sm ring-2 ring-brand-orange/30'
+                                    : isFree
+                                      ? 'border-emerald-300 bg-emerald-50/70 text-emerald-900 hover:border-emerald-500'
+                                      : 'border-amber-300 bg-amber-50/70 text-amber-900 hover:border-amber-500',
+                                )}
+                              >
+                                T{tb.table_number}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   )}
                   <CustomerPicker
@@ -659,33 +703,33 @@ export default function NewSalePage() {
                 </>
               )}
             </div>
-            <div className="max-h-[380px] overflow-y-auto p-4">
+            <div className="max-h-[260px] overflow-y-auto p-3.5">
               {!cart.lines.length ? (
-                <p className="py-10 text-center text-sm text-slate-400">Tap products to add them.</p>
+                <p className="py-5 text-center text-sm text-slate-400">Tap products to add them.</p>
               ) : (
-                <ul className="space-y-3" aria-label="Sale items">
+                <ul className="space-y-2" aria-label="Sale items">
                   {cart.lines.map((l) => (
                     <li
                       key={l.key}
                       data-sb="ticket-row"
                       className={cn(
-                        'rounded-xl border p-3',
+                        'rounded-xl border p-2.5',
                         unavailable.includes(l) ? 'border-red-200 bg-red-50' : 'border-slate-200',
                       )}
                     >
                       <div className="flex justify-between gap-2">
                         <div className="min-w-0">
-                          <p className="truncate font-semibold">{l.name}</p>
+                          <p className="truncate text-sm font-semibold">{l.name}</p>
                           <p className="text-xs text-slate-500">{money(l.unit_price)} each</p>
                         </div>
-                        <p className="shrink-0 font-semibold tabular-nums">
+                        <p className="shrink-0 text-sm font-semibold tabular-nums">
                           {money(lineTotal(l.quantity, l.unit_price))}
                         </p>
                       </div>
-                      <div className="mt-2 flex items-center gap-2">
+                      <div className="mt-1.5 flex items-center gap-1.5">
                         <button
                           type="button"
-                          className="flex h-11 w-11 items-center justify-center rounded-lg border border-slate-300 disabled:opacity-40"
+                          className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 disabled:opacity-40"
                           data-sb="stepper"
                           aria-label={`Decrease ${l.name}`}
                           disabled={l.quantity <= 1}
@@ -694,7 +738,7 @@ export default function NewSalePage() {
                           <Minus className="h-4 w-4" />
                         </button>
                         <input
-                          className="input h-11 w-16 text-center tabular-nums"
+                          className="input h-9 w-14 text-center tabular-nums"
                           inputMode="numeric"
                           aria-label={`Quantity of ${l.name}`}
                           value={l.quantity}
@@ -705,7 +749,7 @@ export default function NewSalePage() {
                         />
                         <button
                           type="button"
-                          className="flex h-11 w-11 items-center justify-center rounded-lg border border-slate-300 disabled:opacity-40"
+                          className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 disabled:opacity-40"
                           data-sb="stepper"
                           aria-label={`Increase ${l.name}`}
                           disabled={l.quantity >= MAX_QTY}
@@ -716,27 +760,27 @@ export default function NewSalePage() {
                         <button
                           type="button"
                           className={cn(
-                            'ml-auto flex h-11 w-11 items-center justify-center rounded-lg hover:bg-slate-100',
+                            'ml-auto flex h-9 w-9 items-center justify-center rounded-lg hover:bg-slate-100',
                             l.notes ? 'text-brand-orange' : 'text-slate-500',
                           )}
                           aria-label={`Note for ${l.name}`}
                           onClick={() => setOpenNote(openNote === l.key ? null : l.key)}
                         >
-                          <MessageSquarePlus className="h-5 w-5" />
+                          <MessageSquarePlus className="h-4 w-4" />
                         </button>
                         <button
                           type="button"
-                          className="flex h-11 w-11 items-center justify-center rounded-lg border border-red-200 bg-red-50/70 text-red-600 hover:bg-red-100"
+                          className="flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 bg-red-50/70 text-red-600 hover:bg-red-100"
                           data-sb="row-remove"
                           aria-label={`Remove ${l.name}`}
                           onClick={() => cart.remove(l.key)}
                         >
-                          <Trash2 className="h-5 w-5" />
+                          <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
                       {(openNote === l.key || l.notes) && (
                         <input
-                          className="input mt-2 h-11"
+                          className="input mt-2 h-9 text-xs"
                           aria-label={`Item note for ${l.name}`}
                           placeholder="Item note"
                           value={l.notes}
@@ -749,23 +793,24 @@ export default function NewSalePage() {
                 </ul>
               )}
               {!addMode && (
-                <div className="mt-4 space-y-3">
+                <div className="mt-3 space-y-2">
                   <label className="block">
                     <span className="label">Order notes</span>
                     <textarea
-                      className="input"
-                      rows={2}
+                      className="input text-xs"
+                      rows={1}
                       maxLength={500}
+                      placeholder="Optional kitchen or table notes…"
                       aria-label="Order notes"
                       value={cart.orderNotes}
                       onChange={(e) => cart.setOrderNotes(e.target.value)}
                     />
                   </label>
-                  <div className="grid grid-cols-[110px_1fr] gap-2">
+                  <div className="grid grid-cols-[100px_1fr] gap-2">
                     <label>
                       <span className="label">Discount</span>
                       <input
-                        className="input h-11 tabular-nums"
+                        className="input h-9 text-xs tabular-nums"
                         inputMode="decimal"
                         aria-label="Discount amount"
                         placeholder="0.00"
@@ -776,7 +821,7 @@ export default function NewSalePage() {
                     <label>
                       <span className="label">Reason</span>
                       <input
-                        className="input h-11"
+                        className="input h-9 text-xs"
                         aria-label="Discount reason"
                         maxLength={200}
                         value={cart.discountReason}
@@ -793,7 +838,7 @@ export default function NewSalePage() {
                 </div>
               )}
             </div>
-            <div className="space-y-3 border-t border-slate-100 bg-slate-50/60 p-4" data-sb="totals">
+            <div className="space-y-2.5 border-t border-slate-100 bg-slate-50/60 p-3.5" data-sb="totals">
               <dl className="space-y-1 text-sm">
                 <div className="flex justify-between">
                   <dt className="text-slate-500">Subtotal</dt>

@@ -101,10 +101,14 @@ export default function NewOrderPage() {
     inclusive,
     order ? Number(order.discount_amount) : 0,
   );
-  const availableTables = (tables.data ?? []).filter(
+  const allTables = tables.data ?? [];
+  const availableTables = allTables.filter(
     (t) => t.status === 'available' || r.settings.tables.allow_multiple_orders,
   );
-  const selectedTable = (tables.data ?? []).find((t) => t.id === cart.tableId) ?? null;
+  const occupiedTables = allTables.filter(
+    (t) => t.status !== 'available' && !r.settings.tables.allow_multiple_orders,
+  );
+  const selectedTable = allTables.find((t) => t.id === cart.tableId) ?? null;
   const tableTaken =
     !addMode && selectedTable && selectedTable.status !== 'available' && !r.settings.tables.allow_multiple_orders;
 
@@ -356,41 +360,71 @@ export default function NewOrderPage() {
                   Table {(tables.data ?? []).find((t) => t.id === order?.table_id)?.table_number ?? '—'}
                 </p>
               ) : (
-                <div className="grid grid-cols-[1fr_88px] gap-2">
-                  <label className="min-w-0">
-                    <span className="label">Table</span>
-                    <select
-                      className="input h-12 text-base"
-                      aria-label="Table"
-                      value={cart.tableId ?? ''}
-                      onChange={(e) => {
-                        cart.setTable(e.target.value || null);
-                        setError(null);
-                      }}
-                    >
-                      <option value="">Select table…</option>
-                      {availableTables.map((t) => (
-                        <option key={t.id} value={t.id}>
-                          Table {t.table_number}
-                          {t.name ? ` · ${t.name}` : ''} ({t.capacity} seats)
-                        </option>
-                      ))}
-                      {selectedTable && !availableTables.includes(selectedTable) && (
-                        <option value={selectedTable.id}>Table {selectedTable.table_number} (occupied)</option>
-                      )}
-                    </select>
-                  </label>
-                  <label>
-                    <span className="label">Guests</span>
-                    <input
-                      className="input h-12 text-base"
-                      inputMode="numeric"
-                      aria-label="Guests"
-                      value={cart.guestCount}
-                      onChange={(e) => cart.setGuestCount(e.target.value)}
-                      placeholder="—"
-                    />
-                  </label>
+                <div className="space-y-2">
+                  <div className="grid grid-cols-[1fr_80px] gap-2">
+                    <label className="min-w-0">
+                      <span className="label">Table</span>
+                      <select
+                        className="input h-11 text-base font-semibold"
+                        aria-label="Table"
+                        value={cart.tableId ?? ''}
+                        onChange={(e) => {
+                          cart.setTable(e.target.value || null);
+                          setError(null);
+                        }}
+                      >
+                        <option value="">Select table…</option>
+                        {availableTables.map((t) => (
+                          <option key={t.id} value={t.id}>
+                            Table {t.table_number}
+                            {t.name ? ` · ${t.name}` : ''} ({t.capacity} seats)
+                          </option>
+                        ))}
+                        {occupiedTables.map((t) => (
+                          <option key={t.id} value={t.id}>
+                            Table {t.table_number}
+                            {t.name ? ` · ${t.name}` : ''} (occupied)
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      <span className="label">Guests</span>
+                      <input
+                        className="input h-11 text-base"
+                        inputMode="numeric"
+                        aria-label="Guests"
+                        value={cart.guestCount}
+                        onChange={(e) => cart.setGuestCount(e.target.value)}
+                        placeholder="—"
+                      />
+                    </label>
+                  </div>
+                  {availableTables.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5" role="group" aria-label="Quick select table">
+                      {availableTables.map((tb) => {
+                        const active = cart.tableId === tb.id;
+                        return (
+                          <button
+                            key={tb.id}
+                            type="button"
+                            onClick={() => {
+                              cart.setTable(tb.id);
+                              setError(null);
+                            }}
+                            className={cn(
+                              'inline-flex h-8 min-w-[38px] items-center justify-center rounded-lg border px-2 font-mono text-xs font-extrabold transition',
+                              active
+                                ? 'border-brand-orange bg-brand-orange text-white shadow-sm ring-2 ring-brand-orange/30'
+                                : 'border-emerald-300 bg-emerald-50/70 text-emerald-900 hover:border-emerald-500',
+                            )}
+                          >
+                            T{tb.table_number}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
               {!addMode && (
@@ -402,7 +436,7 @@ export default function NewOrderPage() {
               )}
             </div>
 
-            <div className="max-h-[420px] overflow-y-auto p-4">
+            <div className="max-h-[260px] overflow-y-auto p-3.5">
               {addMode && !addAllowed && order && (
                 <p className="mb-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
                   Items can’t be added:{' '}
@@ -522,11 +556,11 @@ export default function NewOrderPage() {
                 </ul>
               )}
               {!addMode && (
-                <label className="mt-4 block">
+                <label className="mt-3 block">
                   <span className="label">Special instructions</span>
                   <textarea
-                    className="input"
-                    rows={2}
+                    className="input text-xs"
+                    rows={1}
                     maxLength={500}
                     placeholder="Allergies, timing, seating…"
                     aria-label="Special instructions"
@@ -537,7 +571,7 @@ export default function NewOrderPage() {
               )}
             </div>
 
-            <div className="space-y-2 border-t border-slate-100 bg-slate-50/60 p-4" data-sb="totals">
+            <div className="space-y-2 border-t border-slate-100 bg-slate-50/60 p-3.5" data-sb="totals">
               <dl className="space-y-1 text-sm">
                 <div className="flex justify-between">
                   <dt className="text-slate-500">{addMode ? 'New items subtotal' : 'Subtotal'}</dt>
