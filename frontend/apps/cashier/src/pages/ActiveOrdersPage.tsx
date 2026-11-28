@@ -9,7 +9,7 @@ import { supabase, friendlyError } from '@sombill/api-client/supabase';
 import { fetchTables } from '@sombill/api-client/queries';
 import { formatDateTime, formatMoney, ORDER_STATUS_LABEL, ORDER_TYPE_LABEL } from '@sombill/shared-utils/format';
 import type { Order, OrderStatus, OrderType, PaymentStatus } from '@sombill/shared-types/types';
-import { Card, EmptyState, PageHeader, Skeleton } from '@sombill/shared-ui/ui/Feedback';
+import { Badge, Card, EmptyState, PageHeader, Skeleton } from '@sombill/shared-ui/ui/Feedback';
 import { DataTable, type Column } from '@sombill/shared-ui/ui/DataTable';
 import { SearchInput } from '@sombill/shared-ui/ui/Filters';
 import { OrderStatusBadge, PaymentStatusBadge } from '@sombill/shared-ui/ui/StatusBadges';
@@ -20,6 +20,9 @@ import { useCart } from '@sombill/shared-hooks/cart';
 import { fetchActiveOrders, fetchItemsFor, itemsByOrder } from '@sombill/api-client/orderData';
 import { fetchOrderBundle, printDocument } from '../services/data';
 import { BillDetail } from '../components/BillDetail';
+import { printCashierKitchenTicket } from './NewSalePage';
+
+type ExtendedOrder = Order & { merged_table_numbers?: number[] };
 
 export default function ActiveOrdersPage() {
   const r = useRestaurant();
@@ -32,20 +35,36 @@ export default function ActiveOrdersPage() {
   const [prep, setPrep] = useState<'' | OrderStatus>('');
   const [pay, setPay] = useState<'' | PaymentStatus>('');
   const [type, setType] = useState<'' | OrderType>('');
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'waiter' | 'qr'>('all');
   const [viewId, setViewId] = useState<string | null>(null);
   const q = useQuery(async () => {
-    const [orders, tables] = await Promise.all([fetchActiveOrders(r.id), fetchTables(r.id)]);
+    const [orders, tables] = await Promise.all([
+      fetchActiveOrders(r.id) as Promise<ExtendedOrder[]>,
+      fetchTables(r.id),
+    ]);
     const items = itemsByOrder(await fetchItemsFor(orders.map((o) => o.id)));
     return { orders, items, tables: new Map(tables.map((t) => [t.id, t.table_number])) };
   }, [r.id]);
   useRealtime(['orders', 'order_items', 'payments'], r.id, () => void q.reload(), { debounceMs: 250 });
   const view = useQuery(() => (viewId ? fetchOrderBundle(viewId) : Promise.resolve(null)), [viewId]);
 
+  const sourceOf = (o: Order): 'Waiter' | 'Cashier' | 'QR Online' => {
+    if (o.waiter_id) return 'Waiter';
+    if (o.notes?.toLowerCase().includes('qr self-order')) return 'QR Online';
+    return o.cashier_id ? 'Cashier' : 'QR Online';
+  };
+
   const rows = useMemo(() => {
     const t = search.trim().toLowerCase().replace(/^#/, '');
     return (q.data?.orders ?? [])
       .filter(
-        (o) => (!prep || o.status === prep) && (!pay || o.payment_status === pay) && (!type || o.order_type === type),
+        (o) =>
+          (!prep || o.status === prep) &&
+          (!pay || o.payment_status === pay) &&
+          (!type || o.order_type === type) &&
+          (sourceFilter === 'all' ||
+            (sourceFilter === 'waiter' && Boolean(o.waiter_id)) ||
+            (sourceFilter === 'qr' && sourceOf(o) === 'QR Online')),
       )
       .filter(
         (o) =>
@@ -55,7 +74,7 @@ export default function ActiveOrdersPage() {
           (q.data!.items.get(o.id) ?? []).some((i) => i.product_name.toLowerCase().includes(t)) ||
           staff.nameOf(o.waiter_id).toLowerCase().includes(t),
       );
-  }, [q.data, search, prep, pay, type, staff]);
+  }, [q.data, search, prep, pay, type, sourceFilter, staff]);
 
   const close = async (o: Order) => {
     const { error } = await supabase.rpc('close_paid_order', { p_order: o.id });
@@ -71,9 +90,26 @@ export default function ActiveOrdersPage() {
     navigate('/cashier/new-sale');
   };
 
-  const columns: Column<Order>[] = [
+  const columns: Column<ExtendedOrder>[] = [
     { key: 'no', header: 'Order', cell: (o) => <b>#{o.order_number}</b> },
-    { key: 'table', header: 'Table', cell: (o) => (o.table_id ? q.data?.tables.get(o.table_id) : '—') },
+    {
+      key: 'table',
+      header: 'Table',
+      cell: (o) => {
+        if (!o.table_id) return '—';
+        const base = q.data?.tables.get(o.table_id);
+        const merged = o.merged_table_numbers ?? [];
+        return merged.length > 0 ? `${base} + ${merged.join(', ')}` : base;
+      },
+    },
+    {
+      key: 'source',
+      header: 'Source',
+      cell: (o) => {
+        const src = sourceOf(o);
+        return <Badge tone={src === 'Waiter' ? 'blue' : src === 'QR Online' ? 'orange' : 'gray'}>{src}</Badge>;
+      },
+    },
     { key: 'waiter', header: 'Waiter', cell: (o) => (o.waiter_id ? staff.nameOf(o.waiter_id) : '—') },
     { key: 'type', header: 'Type', cell: (o) => ORDER_TYPE_LABEL[o.order_type] },
     {
@@ -130,6 +166,37 @@ export default function ActiveOrdersPage() {
         description="All open orders from waiters and the counter, updated live."
       />
       <Card bodyClassName="p-0">
+        <div className="flex flex-wrap items-center gap-1.5 border-b border-slate-100 px-4 pt-3 pb-2">
+          {(
+            [
+              ['all', 'All Open', '', 'all'],
+              ['dine_in', 'Dine-in', 'dine_in', 'all'],
+              ['takeaway', 'Takeaway', 'takeaway', 'all'],
+              ['delivery', 'Delivery', 'delivery', 'all'],
+              ['waiter', 'Waiter Orders', '', 'waiter'],
+              ['qr', 'QR Self-Orders', '', 'qr'],
+            ] as const
+          ).map(([id, label, oType, src]) => {
+            const active = type === oType && sourceFilter === src;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => {
+                  setType(oType as '' | OrderType);
+                  setSourceFilter(src);
+                }}
+                className={`h-9 rounded-full border px-3.5 text-xs font-bold transition ${
+                  active
+                    ? 'border-brand-navy bg-brand-navy text-white'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-brand-orange'
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
         <div className="grid grid-cols-1 gap-3 border-b border-slate-100 p-4 md:grid-cols-4">
           <SearchInput value={search} onChange={setSearch} placeholder="Order #, table, waiter or item" />
           <select
@@ -194,6 +261,23 @@ export default function ActiveOrdersPage() {
         footer={
           vb ? (
             <>
+              <Button
+                variant="secondary"
+                icon={<Printer className="h-4 w-4" />}
+                onClick={() =>
+                  printCashierKitchenTicket({
+                    restaurantName: r.name,
+                    orderNumber: vb.order.order_number,
+                    tableLabel: vb.table ? `Table ${vb.table.table_number}` : ORDER_TYPE_LABEL[vb.order.order_type],
+                    orderNotes: vb.order.notes,
+                    items: vb.items
+                      .filter((i) => !i.is_voided)
+                      .map((i) => ({ name: i.product_name, quantity: Number(i.quantity), notes: i.notes })),
+                  })
+                }
+              >
+                Kitchen ticket
+              </Button>
               <Button
                 variant="secondary"
                 icon={<Printer className="h-4 w-4" />}

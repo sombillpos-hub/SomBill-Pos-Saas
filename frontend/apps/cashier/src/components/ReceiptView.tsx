@@ -59,8 +59,21 @@ export function ReceiptView({ d, paperWidth = 80 }: { d: ReceiptData; paperWidth
       <Row l="Date" r={when} />
       <Row l="Cashier" r={d.cashierName} />
       <Row
-        l={d.tableNumber ? 'Table' : 'Type'}
-        r={d.tableNumber ? String(d.tableNumber) : ORDER_TYPE_LABEL[d.order.order_type]}
+        l={
+          d.tableNumber
+            ? ((d.order as { merged_table_numbers?: number[] }).merged_table_numbers?.length ?? 0) > 0
+              ? 'Tables'
+              : 'Table'
+            : 'Type'
+        }
+        r={
+          d.tableNumber
+            ? [
+                d.tableNumber,
+                ...((d.order as { merged_table_numbers?: number[] }).merged_table_numbers ?? []),
+              ].join(', ')
+            : ORDER_TYPE_LABEL[d.order.order_type]
+        }
       />
       <hr className="my-2 border-dashed border-black" />
       <div className="mb-1 flex justify-between font-bold">
@@ -69,12 +82,16 @@ export function ReceiptView({ d, paperWidth = 80 }: { d: ReceiptData; paperWidth
       </div>
       {d.items
         .filter((i) => !i.is_voided)
-        .map((it, i) => (
-          <div key={i} className="mb-1">
-            <p className="break-words">{it.product_name}</p>
-            <Row l={`  ${Number(it.quantity)} × ${m(Number(it.unit_price))}`} r={m(Number(it.line_total))} />
-          </div>
-        ))}
+        .map((it, i) => {
+          const itemNote = (it as { notes?: string | null }).notes;
+          return (
+            <div key={i} className="mb-1">
+              <p className="break-words">{it.product_name}</p>
+              {itemNote && <p className="pl-2 text-[10.5px]">↳ {itemNote}</p>}
+              <Row l={`  ${Number(it.quantity)} × ${m(Number(it.unit_price))}`} r={m(Number(it.line_total))} />
+            </div>
+          );
+        })}
       <hr className="my-2 border-dashed border-black" />
       <Row l="Subtotal" r={m(Number(d.order.subtotal))} />
       {Number(d.order.discount_amount) > 0 && <Row l="Discount" r={`−${m(Number(d.order.discount_amount))}`} />}

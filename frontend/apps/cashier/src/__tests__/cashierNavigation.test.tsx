@@ -19,6 +19,7 @@ const { CASHIER_NAV } = await import('@sombill/cashier/layouts/navigation');
 
 const HEADINGS: Record<string, string | RegExp> = {
   '/cashier': /^Hello, Cali/,
+  '/cashier/tables': 'Tables',
   '/cashier/new-sale': 'New Sale',
   '/cashier/active-orders': 'Active Orders',
   '/cashier/bills': 'Bills',

@@ -4,6 +4,7 @@ import {
   CreditCard,
   History,
   LayoutDashboard,
+  LayoutGrid,
   PlusCircle,
   ReceiptText,
   Receipt,
@@ -15,6 +16,7 @@ import type { PosNavItem } from '@sombill/shared-types/navItem';
 
 export const CASHIER_NAV: PosNavItem[] = [
   { to: '/cashier', label: 'Dashboard', icon: LayoutDashboard, group: 'Overview', end: true },
+  { to: '/cashier/tables', label: 'Tables', icon: LayoutGrid, group: 'Point of Sale' },
   { to: '/cashier/new-sale', label: 'New Sale', icon: PlusCircle, group: 'Point of Sale' },
   { to: '/cashier/active-orders', label: 'Active Orders', icon: ClipboardList, group: 'Point of Sale' },
   { to: '/cashier/bills', label: 'Bills', icon: Receipt, group: 'Point of Sale' },

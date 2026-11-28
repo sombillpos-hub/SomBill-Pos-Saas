@@ -1,6 +1,18 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CreditCard, MessageSquarePlus, Minus, Plus, Save, ScanBarcode, Search, Trash2 } from 'lucide-react';
+import {
+  CreditCard,
+  MessageSquarePlus,
+  Minus,
+  PauseCircle,
+  PlayCircle,
+  Plus,
+  Printer,
+  Save,
+  ScanBarcode,
+  Search,
+  Trash2,
+} from 'lucide-react';
 import { useAuth, useRestaurant } from '@sombill/shared-hooks/AuthContext';
 import { useQuery } from '@sombill/shared-hooks/useQuery';
 import { useRealtime } from '@sombill/shared-hooks/useRealtime';
@@ -12,13 +24,62 @@ import { cn } from '@sombill/shared-utils/cn';
 import type { Order, OrderItem, OrderType } from '@sombill/shared-types/types';
 import { Card, EmptyState, ErrorState, PageHeader, Skeleton } from '@sombill/shared-ui/ui/Feedback';
 import { Button } from '@sombill/shared-ui/ui/Button';
+import { Modal } from '@sombill/shared-ui/ui/Modal';
 import { useToast } from '@sombill/shared-ui/ui/Toast';
 import { CatChip, CustomerPicker, ProductCard } from '@sombill/shared-ui/pos/PosComponents';
-import { useCart } from '@sombill/shared-hooks/cart';
+import { useCart, type CartLine } from '@sombill/shared-hooks/cart';
 import { computeTotals, lineTotal, MAX_QTY, posErrorMessage } from '@sombill/shared-utils/posRules';
 import { cashierErrorMessage, parseMoney, r2 } from '../features/payment';
 
 const TYPES: OrderType[] = ['dine_in', 'takeaway', 'delivery'];
+
+interface HeldOrder {
+  id: string;
+  heldAt: string;
+  orderType: OrderType;
+  tableId: string | null;
+  tableLabel: string | null;
+  customerId: string | null;
+  guestCount: string;
+  orderNotes: string;
+  lines: CartLine[];
+}
+
+export function printCashierKitchenTicket(opts: {
+  restaurantName: string;
+  orderNumber?: number | null;
+  tableLabel?: string | null;
+  orderNotes?: string | null;
+  items: Array<{ name: string; quantity: number; notes?: string | null }>;
+}): void {
+  const esc = (s: string) =>
+    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const rows = opts.items
+    .map(
+      (i) =>
+        `<div style="margin-bottom:6px"><div style="display:flex;gap:8px;font-size:13.5px;font-weight:700"><span style="min-width:28px">${esc(String(Number(i.quantity)))}×</span><span style="flex:1">${esc(i.name)}</span></div>${i.notes ? `<div style="padding-left:36px;font-size:11.5px">↳ ${esc(i.notes)}</div>` : ''}</div>`,
+    )
+    .join('');
+  const html = `<!doctype html><html><head><meta charset="utf-8"/><style>@page{size:80mm auto;margin:0}body{margin:0 auto;padding:4mm 3mm;width:72mm;font-family:monospace;font-size:12px;color:#000;background:#fff}hr{border:0;border-top:1px dashed #000;margin:8px 0}</style></head><body><div style="text-align:center"><p style="font-size:15px;font-weight:800;margin:0">${esc(opts.restaurantName)}</p><p style="font-size:11.5px;font-weight:800;margin:4px 0 0">KITCHEN TICKET · ITEMS ONLY</p></div><hr/>${opts.orderNumber ? `<div style="display:flex;justify-content:space-between"><span>Order</span><b>#${esc(String(opts.orderNumber))}</b></div>` : ''}${opts.tableLabel ? `<div style="display:flex;justify-content:space-between"><span>Table / Type</span><b>${esc(opts.tableLabel)}</b></div>` : ''}<div style="display:flex;justify-content:space-between"><span>Time</span><span>${esc(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))}</span></div><hr/>${rows}${opts.orderNotes ? `<div style="margin-top:6px;padding:4px 6px;border:1px dashed #000;font-size:11.5px"><b>Note:</b> ${esc(opts.orderNotes)}</div>` : ''}<hr/><div style="text-align:center;font-size:10px">SomBill POS · Kitchen Copy</div></body></html>`;
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0';
+  document.body.appendChild(iframe);
+  const doc = iframe.contentDocument ?? iframe.contentWindow?.document;
+  if (!doc || !iframe.contentWindow) {
+    iframe.remove();
+    return;
+  }
+  doc.open();
+  doc.write(html);
+  doc.close();
+  setTimeout(() => {
+    try {
+      iframe.contentWindow?.print();
+    } finally {
+      setTimeout(() => iframe.remove(), 1000);
+    }
+  }, 150);
+}
 
 export default function NewSalePage() {
   const r = useRestaurant();
@@ -33,6 +94,26 @@ export default function NewSalePage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<'save' | 'charge' | null>(null);
   const inFlight = useRef(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const heldStorageKey = `sombill.cashier.held.${r.id}`;
+  const [heldOrders, setHeldOrders] = useState<HeldOrder[]>(() => {
+    try {
+      const raw = localStorage.getItem(heldStorageKey);
+      return raw ? (JSON.parse(raw) as HeldOrder[]) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [heldModalOpen, setHeldModalOpen] = useState(false);
+
+  const saveHeldOrders = (next: HeldOrder[]) => {
+    setHeldOrders(next);
+    try {
+      localStorage.setItem(heldStorageKey, JSON.stringify(next));
+    } catch {
+      /* ignore */
+    }
+  };
 
   const menu = useQuery(
     async () => ({ products: await fetchProducts(r.id), categories: await fetchCategories(r.id) }),
@@ -164,38 +245,124 @@ export default function NewSalePage() {
     if (mode === 'charge') navigate(`/cashier/payments?order=${d.order_id}`);
   };
 
+  const holdCurrentOrder = () => {
+    if (!cart.lines.length) {
+      toast.info('Add at least one item before holding an order.');
+      return;
+    }
+    const entry: HeldOrder = {
+      id: crypto.randomUUID(),
+      heldAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      orderType: cart.orderType,
+      tableId: cart.tableId,
+      tableLabel: selectedTable ? `Table ${selectedTable.table_number}` : ORDER_TYPE_LABEL[cart.orderType],
+      customerId: cart.customerId,
+      guestCount: cart.guestCount,
+      orderNotes: cart.orderNotes,
+      lines: cart.lines,
+    };
+    saveHeldOrders([entry, ...heldOrders]);
+    cart.clear();
+    toast.success(`Order parked (${entry.tableLabel} · ${entry.lines.reduce((s, l) => s + l.quantity, 0)} items).`);
+  };
+
+  const resumeHeldOrder = (h: HeldOrder) => {
+    cart.clear();
+    cart.setOrderType(h.orderType);
+    if (h.tableId) cart.setTable(h.tableId);
+    if (h.customerId) cart.setCustomer(h.customerId);
+    if (h.guestCount) cart.setGuestCount(h.guestCount);
+    if (h.orderNotes) cart.setOrderNotes(h.orderNotes);
+    for (const line of h.lines) {
+      const prod = menu.data?.products.find((p) => p.id === line.product_id);
+      if (prod) {
+        cart.addProduct(prod);
+        if (line.quantity > 1) {
+          // set exact quantity after adding
+          setTimeout(() => cart.setQty(line.key, line.quantity), 0);
+        }
+      }
+    }
+    saveHeldOrders(heldOrders.filter((x) => x.id !== h.id));
+    setHeldModalOpen(false);
+    toast.success(`Resumed parked order (${h.tableLabel}).`);
+  };
+
+  // Keyboard shortcuts: F2 search, F4 charge, F8 hold, Esc clear search
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'F2') {
+        e.preventDefault();
+        searchRef.current?.focus();
+      } else if (e.key === 'F4' && cart.lines.length > 0 && !busy) {
+        e.preventDefault();
+        void submit('charge');
+      } else if (e.key === 'F8' && cart.lines.length > 0 && !addMode) {
+        e.preventDefault();
+        holdCurrentOrder();
+      } else if (e.key === 'Escape' && search) {
+        setSearch('');
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
+
   return (
-    <div className="lg:flex lg:h-[calc(100vh-134px)] lg:flex-col">
+    <div className="flex flex-col">
       <PageHeader
         title={addMode ? `Add items to order #${ex?.order_number ?? ''}` : 'New Sale'}
         description="Prices come from the manager’s menu. Totals, tax and discounts are recalculated by the server."
         actions={
-          addMode ? (
-            <Button variant="secondary" onClick={() => cart.clear()}>
-              Cancel adding
-            </Button>
-          ) : undefined
+          <div className="flex flex-wrap items-center gap-2">
+            {heldOrders.length > 0 && (
+              <Button
+                variant="secondary"
+                icon={<PlayCircle className="h-4 w-4" />}
+                onClick={() => setHeldModalOpen(true)}
+              >
+                Parked orders ({heldOrders.length})
+              </Button>
+            )}
+            {addMode && (
+              <Button variant="secondary" onClick={() => cart.clear()}>
+                Cancel adding
+              </Button>
+            )}
+          </div>
         }
       />
-      <div className="grid grid-cols-1 gap-4 pb-24 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,58fr)_minmax(340px,42fr)] lg:grid-rows-[minmax(0,1fr)] lg:pb-0">
-        <section aria-label="Menu" className="min-w-0 space-y-3 lg:flex lg:min-h-0 lg:flex-col lg:space-y-0 lg:gap-3">
-          <div className="pos-search relative lg:shrink-0">
+      <div className="grid grid-cols-1 items-start gap-4 pb-24 lg:grid-cols-[minmax(0,56fr)_minmax(360px,44fr)] lg:pb-6">
+        <section aria-label="Menu" className="min-w-0 space-y-3">
+          <div className="pos-search relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <ScanBarcode
               className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
               aria-hidden
             />
             <input
+              ref={searchRef}
               type="search"
               className="input h-12 pl-9 pr-11 text-base"
-              placeholder="Search products or SKU"
+              placeholder="Search products or SKU (F2)"
               aria-label="Search products"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && search.trim()) {
+                  const exactSku = products.find((p) => p.sku?.toLowerCase() === search.trim().toLowerCase());
+                  const target = exactSku ?? (products.length === 1 ? products[0] : null);
+                  if (target && target.is_available) {
+                    e.preventDefault();
+                    cart.addProduct(target);
+                    setSearch('');
+                  }
+                }
+              }}
               maxLength={60}
             />
           </div>
-          <div className="flex flex-wrap gap-2 lg:shrink-0" role="tablist" aria-label="Categories">
+          <div className="flex flex-wrap gap-2" role="tablist" aria-label="Categories">
             <CatChip active={!catId} onClick={() => setCatId('')}>
               All
             </CatChip>
@@ -205,7 +372,7 @@ export default function NewSalePage() {
               </CatChip>
             ))}
           </div>
-          <div className="space-y-3 lg:-mx-1 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:px-1 lg:py-1">
+          <div className="space-y-3">
             {menu.error ? (
               <div className="card">
                 <ErrorState message={menu.error} onRetry={menu.reload} />
@@ -237,16 +404,34 @@ export default function NewSalePage() {
           </div>
         </section>
 
-        <aside id="sale-panel" aria-label="Current sale" className="scroll-mt-20 lg:min-h-0">
-          <Card className="pos-ticket flex h-full flex-col" bodyClassName="flex min-h-0 flex-1 flex-col p-0">
+        <aside id="sale-panel" aria-label="Current sale" className="scroll-mt-20 lg:sticky lg:top-4">
+          <Card className="pos-ticket flex flex-col" bodyClassName="flex flex-col p-0">
             <div className="space-y-3 border-b border-slate-100 p-4">
               <div className="flex items-center justify-between gap-2">
-                <h2 className="text-lg font-bold text-brand-navy">
-                  {addMode ? `Order #${ex?.order_number ?? '…'}` : 'Current order'}
-                </h2>
-                {!addMode && cart.orderType === 'dine_in' && selectedTable && (
-                  <span data-sb="table-pill">Table {selectedTable.table_number}</span>
-                )}
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-bold text-brand-navy">
+                    {addMode ? `Order #${ex?.order_number ?? '…'}` : 'Current order'}
+                  </h2>
+                  {cart.itemCount > 0 && (
+                    <span className="inline-flex h-6 min-w-[24px] items-center justify-center rounded-full bg-brand-orange/15 px-2 text-xs font-bold text-brand-orange">
+                      {cart.itemCount}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {!addMode && cart.orderType === 'dine_in' && selectedTable && (
+                    <span data-sb="table-pill">Table {selectedTable.table_number}</span>
+                  )}
+                  {cart.lines.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => cart.clear(true)}
+                      className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-red-600 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" /> Clear
+                    </button>
+                  )}
+                </div>
               </div>
               {!addMode && (
                 <>
@@ -308,7 +493,7 @@ export default function NewSalePage() {
                 </>
               )}
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto p-4">
+            <div className="max-h-[380px] overflow-y-auto p-4">
               {!cart.lines.length ? (
                 <p className="py-10 text-center text-sm text-slate-400">Tap products to add them.</p>
               ) : (
@@ -375,7 +560,7 @@ export default function NewSalePage() {
                         </button>
                         <button
                           type="button"
-                          className="flex h-11 w-11 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"
+                          className="flex h-11 w-11 items-center justify-center rounded-lg border border-red-200 bg-red-50/70 text-red-600 hover:bg-red-100"
                           data-sb="row-remove"
                           aria-label={`Remove ${l.name}`}
                           onClick={() => cart.remove(l.key)}
@@ -501,10 +686,91 @@ export default function NewSalePage() {
                   {addMode ? 'Add & charge' : 'Charge'}
                 </Button>
               </div>
+              {cart.lines.length > 0 && (
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  {!addMode && (
+                    <Button
+                      variant="secondary"
+                      className="h-10 text-xs"
+                      icon={<PauseCircle className="h-4 w-4" />}
+                      onClick={holdCurrentOrder}
+                    >
+                      Hold / Park (F8)
+                    </Button>
+                  )}
+                  <Button
+                    variant="secondary"
+                    className={cn('h-10 text-xs', addMode && 'col-span-2')}
+                    icon={<Printer className="h-4 w-4" />}
+                    onClick={() =>
+                      printCashierKitchenTicket({
+                        restaurantName: r.name,
+                        orderNumber: ex?.order_number ?? null,
+                        tableLabel: selectedTable
+                          ? `Table ${selectedTable.table_number}`
+                          : ORDER_TYPE_LABEL[cart.orderType],
+                        orderNotes: cart.orderNotes.trim() || null,
+                        items: cart.lines.map((l) => ({
+                          name: l.name,
+                          quantity: l.quantity,
+                          notes: l.notes.trim() || null,
+                        })),
+                      })
+                    }
+                  >
+                    Print kitchen ticket
+                  </Button>
+                </div>
+              )}
             </div>
           </Card>
         </aside>
       </div>
+
+      {/* Parked / Held Orders Modal */}
+      <Modal
+        open={heldModalOpen}
+        onClose={() => setHeldModalOpen(false)}
+        size="md"
+        title={`Parked Orders (${heldOrders.length})`}
+        description="Resume a held order back into the terminal or discard it."
+        footer={
+          <Button variant="secondary" onClick={() => setHeldModalOpen(false)}>
+            Close
+          </Button>
+        }
+      >
+        {!heldOrders.length ? (
+          <EmptyState title="No parked orders" />
+        ) : (
+          <ul className="divide-y divide-slate-100">
+            {heldOrders.map((h) => (
+              <li key={h.id} className="flex items-center justify-between gap-3 py-3 text-sm">
+                <div className="min-w-0">
+                  <p className="font-bold text-brand-navy">
+                    {h.tableLabel} · <span className="font-normal text-slate-500">Parked at {h.heldAt}</span>
+                  </p>
+                  <p className="truncate text-xs text-slate-600">
+                    {h.lines.map((l) => `${l.quantity}× ${l.name}`).join(', ')}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <Button size="sm" variant="orange" onClick={() => resumeHeldOrder(h)}>
+                    Resume
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="danger"
+                    onClick={() => saveHeldOrders(heldOrders.filter((x) => x.id !== h.id))}
+                  >
+                    Discard
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Modal>
       {cart.lines.length > 0 && (
         <div
           data-sb="mobile-bar"

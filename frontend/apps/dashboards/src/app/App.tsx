@@ -51,6 +51,7 @@ const ProfilePage = lazy(() => import('@sombill/shared-ui/pos/ProfilePage'));
 
 // Cashier POS
 const CashierDashboardPage = lazy(() => import('@sombill/cashier/pages/CashierDashboardPage'));
+const CashierTablesPage = lazy(() => import('@sombill/cashier/pages/CashierTablesPage'));
 const NewSalePage = lazy(() => import('@sombill/cashier/pages/NewSalePage'));
 const ActiveOrdersPage = lazy(() => import('@sombill/cashier/pages/ActiveOrdersPage'));
 const CashierBillsPage = lazy(() => import('@sombill/cashier/pages/CashierBillsPage'));
@@ -111,6 +112,7 @@ export function AppRoutes() {
           <Route path="/cashier-print/:kind/:id" element={<PrintPage />} />
           <Route path="/cashier" element={<CashierLayout />}>
             <Route index element={<CashierDashboardPage />} />
+            <Route path="tables" element={<CashierTablesPage />} />
             <Route path="new-sale" element={<NewSalePage />} />
             <Route path="active-orders" element={<ActiveOrdersPage />} />
             <Route path="bills" element={<CashierBillsPage />} />

@@ -2345,6 +2345,41 @@ export type Database = {
         };
         Returns: Json;
       };
+      merge_table_orders: {
+        Args: {
+          p_primary_table: string;
+          p_secondary_tables: string[];
+        };
+        Returns: Json;
+      };
+      unmerge_table_orders: {
+        Args: {
+          p_primary_table: string;
+        };
+        Returns: Json;
+      };
+      transfer_table_order: {
+        Args: {
+          p_order: string;
+          p_to_table: string;
+        };
+        Returns: Json;
+      };
+      void_order_item: {
+        Args: {
+          p_item: string;
+          p_reason: string;
+        };
+        Returns: Json;
+      };
+      split_order_by_items: {
+        Args: {
+          p_items: Json;
+          p_order: string;
+          p_split_label?: string | null;
+        };
+        Returns: Json;
+      };
       touch_last_login: {
         Args: Record<PropertyKey, never>;
         Returns: undefined;

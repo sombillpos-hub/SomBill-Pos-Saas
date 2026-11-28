@@ -222,6 +222,11 @@ export default function PaymentProcessingPage() {
                       way.
                     </p>
                   )}
+                  {params.get('amount') && (
+                    <p className="mb-3 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-xs font-semibold text-orange-950">
+                      Split share selected: <b className="font-mono">{formatMoney(Number(params.get('amount')), r.currency)}</b>. Choose a payment method below and enter this amount to collect this guest’s share.
+                    </p>
+                  )}
                   <PaymentPanel
                     bundle={bundle.data}
                     blocked={shift.blocked}

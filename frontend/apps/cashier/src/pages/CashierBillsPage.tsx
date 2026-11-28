@@ -175,8 +175,16 @@ export default function CashierBillsPage() {
                             {tableNo(o.table_id) ? `Table ${tableNo(o.table_id)}` : o.order_type.replace('_', '-')}
                             {o.customer_id ? ` · ${q.data!.customers.get(o.customer_id) ?? ''}` : ''}
                           </span>
-                          <span className="mt-0.5 block">
+                          <span className="mt-0.5 flex flex-wrap items-center gap-1.5">
                             <PaymentStatusBadge s={o.payment_status} />
+                            {o.bill_requested_at &&
+                              o.payment_status !== 'paid' &&
+                              Date.now() - new Date(o.bill_requested_at).getTime() > 10 * 60 * 1000 && (
+                                <span className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-red-700">
+                                  Overdue · {Math.floor((Date.now() - new Date(o.bill_requested_at).getTime()) / 60000)}
+                                  m
+                                </span>
+                              )}
                           </span>
                         </span>
                         <span className="shrink-0 text-right text-sm">

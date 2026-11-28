@@ -140,10 +140,20 @@ export default function ShiftPage() {
       ) : (
         s && (
           <div className="space-y-6">
-            <p className="text-sm text-slate-600">
-              Open since <b>{formatDateTime(open.opened_at, r.timezone)}</b> ({formatDuration(open.opened_at)})
-              {open.opening_notes ? ` · ${open.opening_notes}` : ''}
-            </p>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm text-slate-600">
+                Open since <b>{formatDateTime(open.opened_at, r.timezone)}</b> ({formatDuration(open.opened_at)})
+                {open.opening_notes ? ` · ${open.opening_notes}` : ''}
+              </p>
+              <Button
+                size="sm"
+                variant="secondary"
+                icon={<Printer className="h-4 w-4" />}
+                onClick={() => window.print()}
+              >
+                Print X-Report (Mid-shift)
+              </Button>
+            </div>
             <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
               <StatCard label="Opening cash" value={money(s.opening_cash)} />
               <StatCard label="Cash sales" value={money(s.cash_sales)} tone="green" />
