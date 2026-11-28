@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
+  CheckCircle2,
   CreditCard,
+  Eye,
   MessageSquarePlus,
   Minus,
   PauseCircle,
@@ -11,6 +13,7 @@ import {
   Save,
   ScanBarcode,
   Search,
+  Sparkles,
   Trash2,
 } from 'lucide-react';
 import { useAuth, useRestaurant } from '@sombill/shared-hooks/AuthContext';
@@ -29,9 +32,19 @@ import { useToast } from '@sombill/shared-ui/ui/Toast';
 import { CatChip, CustomerPicker, ProductCard } from '@sombill/shared-ui/pos/PosComponents';
 import { useCart, type CartLine } from '@sombill/shared-hooks/cart';
 import { computeTotals, lineTotal, MAX_QTY, posErrorMessage } from '@sombill/shared-utils/posRules';
-import { cashierErrorMessage, parseMoney, r2 } from '../features/payment';
+import { cashierErrorMessage, parseMoney, r2, type PosMethod } from '../features/payment';
+import type { ReceiptData } from '../features/receiptModel';
+import { ReceiptView } from '../components/ReceiptView';
+import { printReceiptFor } from './PaymentProcessingPage';
 
 const TYPES: OrderType[] = ['dine_in', 'takeaway', 'delivery'];
+
+const SIMPLE_PAY_METHODS: Array<{ id: PosMethod; label: string; sub: string; tone: string }> = [
+  { id: 'zaad', label: 'Zaad', sub: 'Mobile Money', tone: 'border-red-300 bg-red-50/70 text-red-900' },
+  { id: 'somtel_money', label: 'e-Dahab', sub: 'Somtel Money', tone: 'border-emerald-300 bg-emerald-50/70 text-emerald-900' },
+  { id: 'cash', label: 'Cash', sub: 'Counter Cash', tone: 'border-slate-300 bg-white text-brand-navy' },
+  { id: 'evc_plus', label: 'EVC Plus', sub: 'Mobile Money', tone: 'border-orange-300 bg-orange-50/70 text-orange-950' },
+];
 
 interface HeldOrder {
   id: string;
@@ -81,9 +94,52 @@ export function printCashierKitchenTicket(opts: {
   }, 150);
 }
 
+export function printDraftReceiptPreview(opts: {
+  restaurantName: string;
+  currency: string;
+  tableLabel: string;
+  cashierName: string;
+  paymentLabel?: string | null;
+  subtotal: number;
+  discount: number;
+  taxLabel: string;
+  taxAmount: number;
+  total: number;
+  items: Array<{ name: string; quantity: number; unitPrice: number; notes?: string | null }>;
+}): void {
+  const esc = (s: string) =>
+    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const m = (n: number) => formatMoney(n, opts.currency);
+  const rows = opts.items
+    .map(
+      (i) =>
+        `<div style="margin-bottom:5px"><div style="font-weight:700">${esc(i.name)}</div>${i.notes ? `<div style="padding-left:8px;font-size:10.5px">↳ ${esc(i.notes)}</div>` : ''}<div style="display:flex;justify-content:space-between"><span>&nbsp;&nbsp;${esc(String(i.quantity))} × ${esc(m(i.unitPrice))}</span><b>${esc(m(lineTotal(i.quantity, i.unitPrice)))}</b></div></div>`,
+    )
+    .join('');
+  const html = `<!doctype html><html><head><meta charset="utf-8"/><style>@page{size:80mm auto;margin:0}body{margin:0 auto;padding:4mm 3mm;width:72mm;font-family:monospace;font-size:11.5px;color:#000;background:#fff}hr{border:0;border-top:1px dashed #000;margin:8px 0}</style></head><body><div style="text-align:center"><p style="font-size:14px;font-weight:800;margin:0">${esc(opts.restaurantName)}</p><p style="font-size:11px;font-weight:700;margin:4px 0 0">RECEIPT / BILL</p></div><hr/><div style="display:flex;justify-content:space-between"><span>Table / Type</span><b>${esc(opts.tableLabel)}</b></div><div style="display:flex;justify-content:space-between"><span>Cashier</span><span>${esc(opts.cashierName)}</span></div><div style="display:flex;justify-content:space-between"><span>Date</span><span>${esc(new Date().toLocaleString())}</span></div>${opts.paymentLabel ? `<div style="display:flex;justify-content:space-between"><span>Payment</span><b>${esc(opts.paymentLabel)}</b></div>` : ''}<hr/>${rows}<hr/><div style="display:flex;justify-content:space-between"><span>Subtotal</span><span>${esc(m(opts.subtotal))}</span></div>${opts.discount > 0 ? `<div style="display:flex;justify-content:space-between"><span>Discount</span><span>−${esc(m(opts.discount))}</span></div>` : ''}<div style="display:flex;justify-content:space-between"><span>${esc(opts.taxLabel)}</span><span>${esc(m(opts.taxAmount))}</span></div><div style="display:flex;justify-content:space-between;font-size:14px;font-weight:800;margin-top:4px"><span>TOTAL</span><span>${esc(m(opts.total))}</span></div><hr/><div style="text-align:center;font-size:10.5px">Thank you! · SomBill POS</div></body></html>`;
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0';
+  document.body.appendChild(iframe);
+  const doc = iframe.contentDocument ?? iframe.contentWindow?.document;
+  if (!doc || !iframe.contentWindow) {
+    iframe.remove();
+    return;
+  }
+  doc.open();
+  doc.write(html);
+  doc.close();
+  setTimeout(() => {
+    try {
+      iframe.contentWindow?.print();
+    } finally {
+      setTimeout(() => iframe.remove(), 1000);
+    }
+  }, 150);
+}
+
 export default function NewSalePage() {
   const r = useRestaurant();
-  const { role } = useAuth();
+  const { role, profile } = useAuth();
   const cart = useCart();
   const toast = useToast();
   const navigate = useNavigate();
@@ -92,7 +148,17 @@ export default function NewSalePage() {
   const [search, setSearch] = useState('');
   const [openNote, setOpenNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState<'save' | 'charge' | null>(null);
+  const [busy, setBusy] = useState<'save' | 'charge' | 'quickpay' | null>(null);
+  const [payMethod, setPayMethod] = useState<PosMethod>('zaad');
+  const [payRef, setPayRef] = useState('');
+  const [receiptPreviewOpen, setReceiptPreviewOpen] = useState(false);
+  const [lastPaidOrder, setLastPaidOrder] = useState<{
+    orderId: string;
+    orderNumber: number;
+    total: number;
+    methodLabel: string;
+    receiptData: ReceiptData;
+  } | null>(null);
   const inFlight = useRef(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const heldStorageKey = `sombill.cashier.held.${r.id}`;
@@ -168,7 +234,53 @@ export default function NewSalePage() {
     return menu.data && (!p || !p.is_available || p.archived_at);
   });
 
-  const submit = async (mode: 'save' | 'charge') => {
+  const draftReceiptData: ReceiptData = useMemo(
+    () => ({
+      kind: 'receipt',
+      restaurant: r,
+      order: {
+        order_number: ex?.order_number ?? 0,
+        order_type: cart.orderType,
+        subtotal: t.subtotal,
+        discount_amount: addMode ? 0 : (discount ?? 0),
+        tax_amount: t.tax,
+        total: t.total,
+        amount_paid: t.total,
+        amount_refunded: 0,
+        tax_rate: taxRate,
+        tax_inclusive: inclusive,
+        created_at: new Date().toISOString(),
+      },
+      items: cart.lines.map((l) => ({
+        product_name: l.name,
+        quantity: l.quantity,
+        unit_price: l.unit_price,
+        line_total: lineTotal(l.quantity, l.unit_price),
+        is_voided: false,
+        notes: l.notes.trim() || null,
+      })),
+      payments: [
+        {
+          kind: 'payment',
+          status: 'succeeded',
+          method: payMethod,
+          amount: t.total,
+          reference: payRef.trim() || null,
+          transaction_number: null,
+          amount_received: payMethod === 'cash' ? t.total : null,
+          change_given: 0,
+          created_at: new Date().toISOString(),
+        },
+      ],
+      receiptNumber: null,
+      cashierName: profile?.full_name || 'Cashier',
+      tableNumber: selectedTable?.table_number ?? null,
+      printedAt: new Date(),
+    }),
+    [r, ex?.order_number, cart.orderType, cart.lines, t, addMode, discount, taxRate, inclusive, payMethod, payRef, profile?.full_name, selectedTable?.table_number],
+  );
+
+  const submit = async (mode: 'save' | 'charge' | 'quickpay') => {
     if (inFlight.current) return;
     setError(null);
     if (!cart.lines.length) {
@@ -220,9 +332,9 @@ export default function NewSalePage() {
             p_discount_reason: nullIfEmpty(cart.discountReason),
             p_idempotency_key: cart.idempotencyKey,
           });
-    inFlight.current = false;
-    setBusy(null);
     if (res.error) {
+      inFlight.current = false;
+      setBusy(null);
       const e = posErrorMessage(cashierErrorMessage(friendlyError(res.error)));
       setError(e.message);
       if (e.kind === 'price' || e.kind === 'unavailable') {
@@ -236,11 +348,65 @@ export default function NewSalePage() {
       return;
     }
     const d = res.data as { order_id: string; order_number: number; total: number };
+    const orderTotal = Number(d.total);
+
+    if (mode === 'quickpay') {
+      const methodLabel = SIMPLE_PAY_METHODS.find((m) => m.id === payMethod)?.label ?? payMethod;
+      const autoRef =
+        payMethod === 'cash'
+          ? null
+          : payRef.trim() || `${payMethod.toUpperCase().slice(0, 4)}-${d.order_number}-${Date.now().toString().slice(-4)}`;
+      const payRes = await supabase.rpc('record_payments', {
+        p_order: d.order_id,
+        p_payments: [
+          {
+            method: payMethod,
+            amount: orderTotal,
+            reference: autoRef,
+            amount_received: payMethod === 'cash' ? orderTotal : null,
+          },
+        ],
+        p_idempotency_key: crypto.randomUUID(),
+        p_close_order: true,
+      });
+      inFlight.current = false;
+      setBusy(null);
+      if (payRes.error) {
+        cart.clear();
+        toast.info(`Order #${d.order_number} created. Opening payment page (${friendlyError(payRes.error)}).`);
+        navigate(`/cashier/payments?order=${d.order_id}`);
+        return;
+      }
+      const receiptSnap: ReceiptData = {
+        ...draftReceiptData,
+        order: {
+          ...draftReceiptData.order,
+          order_number: d.order_number,
+          total: orderTotal,
+          amount_paid: orderTotal,
+        },
+      };
+      setLastPaidOrder({
+        orderId: d.order_id,
+        orderNumber: d.order_number,
+        total: orderTotal,
+        methodLabel,
+        receiptData: receiptSnap,
+      });
+      setPayRef('');
+      cart.clear();
+      void tables.reload();
+      toast.success(`Order #${d.order_number} confirmed & paid via ${methodLabel} (${money(orderTotal)}).`);
+      return;
+    }
+
+    inFlight.current = false;
+    setBusy(null);
     cart.clear();
     toast.success(
       addMode
         ? `Items added to order #${d.order_number}.`
-        : `Order #${d.order_number} created (${money(Number(d.total))}).`,
+        : `Order #${d.order_number} created (${money(orderTotal)}).`,
     );
     if (mode === 'charge') navigate(`/cashier/payments?order=${d.order_id}`);
   };
@@ -312,7 +478,7 @@ export default function NewSalePage() {
     <div className="flex flex-col">
       <PageHeader
         title={addMode ? `Add items to order #${ex?.order_number ?? ''}` : 'New Sale'}
-        description="Prices come from the manager’s menu. Totals, tax and discounts are recalculated by the server."
+        description="1. Select Table & Add Items → 2. Preview & Print Receipt → 3. Choose Zaad, e-Dahab or Cash & Confirm."
         actions={
           <div className="flex flex-wrap items-center gap-2">
             {heldOrders.length > 0 && (
@@ -627,7 +793,7 @@ export default function NewSalePage() {
                 </div>
               )}
             </div>
-            <div className="space-y-2 border-t border-slate-100 bg-slate-50/60 p-4" data-sb="totals">
+            <div className="space-y-3 border-t border-slate-100 bg-slate-50/60 p-4" data-sb="totals">
               <dl className="space-y-1 text-sm">
                 <div className="flex justify-between">
                   <dt className="text-slate-500">Subtotal</dt>
@@ -658,6 +824,98 @@ export default function NewSalePage() {
                   </dd>
                 </div>
               </dl>
+
+              {/* Step 2: Preview & Print Receipt directly on New Sale */}
+              {cart.lines.length > 0 && (
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant="secondary"
+                    className="h-11 text-xs font-bold"
+                    icon={<Eye className="h-4 w-4" />}
+                    onClick={() => setReceiptPreviewOpen(true)}
+                  >
+                    Preview Receipt
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    className="h-11 text-xs font-bold"
+                    icon={<Printer className="h-4 w-4" />}
+                    onClick={() =>
+                      printDraftReceiptPreview({
+                        restaurantName: r.name,
+                        currency: r.currency,
+                        tableLabel: selectedTable
+                          ? `Table ${selectedTable.table_number}`
+                          : ORDER_TYPE_LABEL[cart.orderType],
+                        cashierName: profile?.full_name || 'Cashier',
+                        paymentLabel: SIMPLE_PAY_METHODS.find((m) => m.id === payMethod)?.label ?? null,
+                        subtotal: t.subtotal,
+                        discount: addMode ? 0 : (discount ?? 0),
+                        taxLabel: `${r.tax_label} ${(taxRate * 100).toFixed(0)}%`,
+                        taxAmount: t.tax,
+                        total: t.total,
+                        items: cart.lines.map((l) => ({
+                          name: l.name,
+                          quantity: l.quantity,
+                          unitPrice: l.unit_price,
+                          notes: l.notes.trim() || null,
+                        })),
+                      })
+                    }
+                  >
+                    Print Receipt
+                  </Button>
+                </div>
+              )}
+
+              {/* Step 3: Simple Payment (Zaad, e-Dahab, Cash) + Confirm */}
+              {!addMode && cart.lines.length > 0 && (
+                <div className="rounded-xl border border-orange-200 bg-orange-50/50 p-3">
+                  <p className="mb-2 flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-brand-navy">
+                    <Sparkles className="h-4 w-4 text-brand-orange" /> Payment Method (Zaad · e-Dahab · Cash)
+                  </p>
+                  <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+                    {SIMPLE_PAY_METHODS.map((m) => {
+                      const active = payMethod === m.id;
+                      return (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => setPayMethod(m.id)}
+                          className={cn(
+                            'flex flex-col items-start rounded-lg border px-2.5 py-2 text-left transition',
+                            active
+                              ? 'border-brand-orange bg-white ring-2 ring-brand-orange/30'
+                              : m.tone,
+                          )}
+                        >
+                          <span className="text-xs font-extrabold">{m.label}</span>
+                          <span className="text-[10px] opacity-75">{m.sub}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {payMethod !== 'cash' && (
+                    <input
+                      className="input mt-2 h-10 bg-white text-xs"
+                      placeholder="Optional reference (auto-filled if blank)"
+                      value={payRef}
+                      onChange={(e) => setPayRef(e.target.value)}
+                    />
+                  )}
+                  <Button
+                    variant="orange"
+                    className="mt-2 h-12 w-full text-sm font-bold"
+                    icon={<CheckCircle2 className="h-4 w-4" />}
+                    loading={busy === 'quickpay'}
+                    disabled={!!busy || !cart.lines.length}
+                    onClick={() => void submit('quickpay')}
+                  >
+                    Confirm &amp; Pay with {SIMPLE_PAY_METHODS.find((m) => m.id === payMethod)?.label} ({money(t.total)})
+                  </Button>
+                </div>
+              )}
+
               {error && (
                 <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
                   {error}
@@ -726,6 +984,102 @@ export default function NewSalePage() {
           </Card>
         </aside>
       </div>
+
+      {/* Live Receipt Preview Modal before or during checkout */}
+      <Modal
+        open={receiptPreviewOpen}
+        onClose={() => setReceiptPreviewOpen(false)}
+        size="md"
+        title="Receipt Preview (80mm Thermal)"
+        description="Preview the customer receipt before printing or confirming payment."
+        footer={
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <Button variant="secondary" onClick={() => setReceiptPreviewOpen(false)}>
+              Close
+            </Button>
+            <Button
+              variant="secondary"
+              icon={<Printer className="h-4 w-4" />}
+              onClick={() =>
+                printDraftReceiptPreview({
+                  restaurantName: r.name,
+                  currency: r.currency,
+                  tableLabel: selectedTable
+                    ? `Table ${selectedTable.table_number}`
+                    : ORDER_TYPE_LABEL[cart.orderType],
+                  cashierName: profile?.full_name || 'Cashier',
+                  paymentLabel: SIMPLE_PAY_METHODS.find((m) => m.id === payMethod)?.label ?? null,
+                  subtotal: t.subtotal,
+                  discount: addMode ? 0 : (discount ?? 0),
+                  taxLabel: `${r.tax_label} ${(taxRate * 100).toFixed(0)}%`,
+                  taxAmount: t.tax,
+                  total: t.total,
+                  items: cart.lines.map((l) => ({
+                    name: l.name,
+                    quantity: l.quantity,
+                    unitPrice: l.unit_price,
+                    notes: l.notes.trim() || null,
+                  })),
+                })
+              }
+            >
+              Print Receipt Now
+            </Button>
+            {!addMode && (
+              <Button
+                variant="orange"
+                icon={<CheckCircle2 className="h-4 w-4" />}
+                loading={busy === 'quickpay'}
+                onClick={() => {
+                  setReceiptPreviewOpen(false);
+                  void submit('quickpay');
+                }}
+              >
+                Confirm &amp; Pay ({SIMPLE_PAY_METHODS.find((m) => m.id === payMethod)?.label})
+              </Button>
+            )}
+          </div>
+        }
+      >
+        <div className="rounded-xl border border-slate-200 bg-slate-100 p-4">
+          <ReceiptView d={draftReceiptData} />
+        </div>
+      </Modal>
+
+      {/* Post-Payment Confirmed & Print Receipt Modal */}
+      <Modal
+        open={!!lastPaidOrder}
+        onClose={() => setLastPaidOrder(null)}
+        size="md"
+        title={lastPaidOrder ? `Order #${lastPaidOrder.orderNumber} Confirmed & Paid` : 'Payment Confirmed'}
+        description={
+          lastPaidOrder
+            ? `Paid ${money(lastPaidOrder.total)} via ${lastPaidOrder.methodLabel}. Print the customer receipt below.`
+            : ''
+        }
+        footer={
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <Button variant="secondary" onClick={() => setLastPaidOrder(null)}>
+              New Sale
+            </Button>
+            {lastPaidOrder && (
+              <Button
+                variant="orange"
+                icon={<Printer className="h-4 w-4" />}
+                onClick={() => void printReceiptFor(lastPaidOrder.orderId, toast)}
+              >
+                Print Receipt
+              </Button>
+            )}
+          </div>
+        }
+      >
+        {lastPaidOrder && (
+          <div className="rounded-xl border border-slate-200 bg-slate-100 p-4">
+            <ReceiptView d={lastPaidOrder.receiptData} />
+          </div>
+        )}
+      </Modal>
 
       {/* Parked / Held Orders Modal */}
       <Modal

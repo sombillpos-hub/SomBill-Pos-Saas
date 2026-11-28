@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { BadgeCheck, BellRing, ShieldAlert, XCircle } from 'lucide-react';
+import { BadgeCheck, BellRing, Eye, Printer, ShieldAlert, XCircle } from 'lucide-react';
 import { useAuth, useRestaurant } from '@sombill/shared-hooks/AuthContext';
 import { useQuery } from '@sombill/shared-hooks/useQuery';
 import { useRealtime } from '@sombill/shared-hooks/useRealtime';
@@ -15,9 +15,12 @@ import { Badge, Card, EmptyState, ErrorState, PageHeader, Skeleton } from '@somb
 import { SearchInput, Tabs } from '@sombill/shared-ui/ui/Filters';
 import { Button } from '@sombill/shared-ui/ui/Button';
 import { ConfirmDialog } from '@sombill/shared-ui/ui/ConfirmDialog';
+import { Modal } from '@sombill/shared-ui/ui/Modal';
 import { useToast } from '@sombill/shared-ui/ui/Toast';
 import { fetchOrderBundle, printDocument } from '../services/data';
 import { fetchReceiptData } from '../hooks/useReceiptData';
+import type { ReceiptData } from '../features/receiptModel';
+import { ReceiptView } from '../components/ReceiptView';
 import { thermalPrinter } from '../services/thermalPrinter';
 import { PaymentPanel } from '../components/PaymentPanel';
 import { useOpenShift } from '../hooks/useShift';
@@ -60,7 +63,7 @@ export async function printReceiptFor(
 
 export default function PaymentProcessingPage() {
   const r = useRestaurant();
-  const { session, role } = useAuth();
+  const { session, role, profile } = useAuth();
   const uid = session?.user.id;
   const toast = useToast();
   const staff = useStaffDirectory(r.id);
@@ -70,6 +73,7 @@ export default function PaymentProcessingPage() {
   const [tab, setTab] = useState<'bills' | 'unpaid'>('bills');
   const [search, setSearch] = useState('');
   const [verify, setVerify] = useState<{ p: Payment; approve: boolean } | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const queue = useQuery(async () => {
     const [orders, tables, pending] = await Promise.all([
@@ -110,6 +114,23 @@ export default function PaymentProcessingPage() {
     if (o && o.bill_requested_at && !o.bill_acknowledged_at)
       void supabase.rpc('acknowledge_bill_request', { p_order: o.id }).then(() => bundle.reload());
   }, [o?.id, o?.bill_requested_at, o?.bill_acknowledged_at]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const previewData: ReceiptData | null = useMemo(() => {
+    if (!bundle.data) return null;
+    const b = bundle.data;
+    return {
+      kind: b.order.payment_status === 'paid' ? 'receipt' : 'bill',
+      restaurant: r,
+      order: b.order,
+      items: b.items,
+      payments: b.payments,
+      receiptNumber: b.receipt?.receipt_number ?? null,
+      cashierName: profile?.full_name || 'Cashier',
+      tableNumber: b.table?.table_number ?? null,
+      printedAt: new Date(),
+      reprint: b.receipt?.print_count,
+    };
+  }, [bundle.data, r, profile?.full_name]);
 
   const list = useMemo(() => {
     const t = search.trim().toLowerCase().replace(/^#/, '');
@@ -204,7 +225,31 @@ export default function PaymentProcessingPage() {
             )}
           </Card>
           <div className="min-w-0 space-y-4">
-            <Card title={o ? `Order #${o.order_number}` : 'Select an order'}>
+            <Card
+              title={o ? `Order #${o.order_number}` : 'Select an order'}
+              action={
+                bundle.data ? (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      icon={<Eye className="h-4 w-4" />}
+                      onClick={() => setPreviewOpen(true)}
+                    >
+                      Preview Receipt
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      icon={<Printer className="h-4 w-4" />}
+                      onClick={() => void printReceiptFor(bundle.data!.order.id, toast)}
+                    >
+                      Print Receipt
+                    </Button>
+                  </div>
+                ) : undefined
+              }
+            >
               {!orderId ? (
                 <p className="text-sm text-slate-500">
                   Choose an order on the left, or open one from Active Orders or Bills.
@@ -234,6 +279,7 @@ export default function PaymentProcessingPage() {
                       void bundle.reload();
                       void queue.reload();
                     }}
+                    onPreviewReceipt={() => setPreviewOpen(true)}
                     onPrintReceipt={() => void printReceiptFor(bundle.data!.order.id, toast)}
                   />
                 </>
@@ -288,6 +334,38 @@ export default function PaymentProcessingPage() {
           </div>
         </div>
       )}
+      <Modal
+        open={previewOpen && !!previewData}
+        onClose={() => setPreviewOpen(false)}
+        size="md"
+        title={o ? `Receipt Preview · Order #${o.order_number}` : 'Receipt Preview'}
+        description="Live 80mm thermal receipt preview. Click Print Receipt to send to your thermal printer."
+        footer={
+          <div className="flex items-center justify-end gap-2">
+            <Button variant="secondary" onClick={() => setPreviewOpen(false)}>
+              Close
+            </Button>
+            {bundle.data && (
+              <Button
+                variant="orange"
+                icon={<Printer className="h-4 w-4" />}
+                onClick={() => {
+                  setPreviewOpen(false);
+                  void printReceiptFor(bundle.data!.order.id, toast);
+                }}
+              >
+                Print Receipt
+              </Button>
+            )}
+          </div>
+        }
+      >
+        {previewData && (
+          <div className="rounded-xl border border-slate-200 bg-slate-100 p-4">
+            <ReceiptView d={previewData} />
+          </div>
+        )}
+      </Modal>
       <ConfirmDialog
         open={!!verify}
         danger={verify?.approve === false}

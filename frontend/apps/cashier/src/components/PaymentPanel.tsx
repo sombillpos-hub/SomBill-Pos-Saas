@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Banknote, CheckCircle2, CreditCard, Printer, Smartphone, Trash2 } from 'lucide-react';
+import { Banknote, CheckCircle2, CreditCard, Eye, Printer, Smartphone, Sparkles, Trash2 } from 'lucide-react';
 import { useRestaurant } from '@sombill/shared-hooks/AuthContext';
 import { supabase, friendlyError } from '@sombill/api-client/supabase';
 import { formatMoney, ORDER_TYPE_LABEL } from '@sombill/shared-utils/format';
@@ -34,16 +34,30 @@ export interface PaymentResult {
 
 const ICON = { cash: Banknote, card: CreditCard, mobile: Smartphone };
 
+const QUICK_METHODS: Array<{ id: PosMethod; label: string; badge: string; tone: string }> = [
+  { id: 'zaad', label: 'Zaad', badge: 'Mobile Money', tone: 'border-red-300 bg-red-50/70 text-red-900 hover:border-red-500' },
+  {
+    id: 'somtel_money',
+    label: 'e-Dahab',
+    badge: 'Somtel Money',
+    tone: 'border-emerald-300 bg-emerald-50/70 text-emerald-900 hover:border-emerald-500',
+  },
+  { id: 'cash', label: 'Cash', badge: 'Exact Amount', tone: 'border-slate-300 bg-white text-brand-navy hover:border-brand-orange' },
+  { id: 'evc_plus', label: 'EVC Plus', badge: 'Mobile Money', tone: 'border-orange-300 bg-orange-50/70 text-orange-950 hover:border-orange-500' },
+];
+
 export function PaymentPanel({
   bundle,
   blocked,
   onRecorded,
   onPrintReceipt,
+  onPreviewReceipt,
 }: {
   bundle: OrderBundle;
   blocked: boolean;
   onRecorded: (r: PaymentResult) => void;
   onPrintReceipt: () => void;
+  onPreviewReceipt?: () => void;
 }) {
   const r = useRestaurant();
   const toast = useToast();
@@ -53,6 +67,8 @@ export function PaymentPanel({
   const [lines, setLines] = useState<PayLine[]>([]);
   const [key, setKey] = useState(() => crypto.randomUUID()); // one key per payment attempt; retries reuse it
   const [busy, setBusy] = useState(false);
+  const [quickMethod, setQuickMethod] = useState<PosMethod>('zaad');
+  const [quickRef, setQuickRef] = useState('');
   const inFlight = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<PaymentResult | null>(null);
@@ -107,6 +123,48 @@ export function PaymentPanel({
     onRecorded(res);
   };
 
+  const quickConfirm = async () => {
+    if (inFlight.current || blocked || b.payable <= 0) return;
+    inFlight.current = true;
+    setBusy(true);
+    setError(null);
+    const autoRef =
+      quickMethod === 'cash'
+        ? null
+        : quickRef.trim() || `${quickMethod.toUpperCase().slice(0, 4)}-${o.order_number}-${Date.now().toString().slice(-4)}`;
+    const payload = [
+      {
+        method: quickMethod,
+        amount: b.payable,
+        reference: autoRef,
+        amount_received: quickMethod === 'cash' ? b.payable : null,
+      },
+    ];
+    const { data, error: e } = await supabase.rpc('record_payments', {
+      p_order: o.id,
+      p_payments: payload,
+      p_idempotency_key: key,
+      p_close_order: true,
+    });
+    inFlight.current = false;
+    setBusy(false);
+    if (e) {
+      setError(cashierErrorMessage(friendlyError(e)));
+      return;
+    }
+    const res = data as unknown as PaymentResult;
+    setDone(res);
+    setLines([]);
+    setQuickRef('');
+    setKey(crypto.randomUUID());
+    toast.success(
+      res.payment_status === 'paid'
+        ? `Order #${o.order_number} paid via ${quickMethod === 'somtel_money' ? 'e-Dahab' : quickMethod.toUpperCase()}.`
+        : 'Payment recorded.',
+    );
+    onRecorded(res);
+  };
+
   return (
     <div className="space-y-4" data-testid="payment-panel">
       <dl
@@ -143,11 +201,35 @@ export function PaymentPanel({
             <dd className="font-semibold tabular-nums text-amber-700">{money(b.pending)}</dd>
           </div>
         )}
-        <div className="col-span-2 sm:col-span-3">
-          <dt className="text-xs text-slate-500">Outstanding</dt>
-          <dd className="text-2xl font-bold tabular-nums text-brand-red" data-testid="pp-outstanding">
-            {money(b.payable)}
-          </dd>
+        <div className="col-span-2 flex flex-wrap items-center justify-between gap-2 sm:col-span-3">
+          <div>
+            <dt className="text-xs text-slate-500">Outstanding</dt>
+            <dd className="text-2xl font-bold tabular-nums text-brand-red" data-testid="pp-outstanding">
+              {money(b.payable)}
+            </dd>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {onPreviewReceipt && (
+              <Button
+                variant="secondary"
+                size="sm"
+                className="h-10"
+                icon={<Eye className="h-4 w-4" />}
+                onClick={onPreviewReceipt}
+              >
+                Preview Receipt
+              </Button>
+            )}
+            <Button
+              variant="secondary"
+              size="sm"
+              className="h-10"
+              icon={<Printer className="h-4 w-4" />}
+              onClick={onPrintReceipt}
+            >
+              Print Receipt
+            </Button>
+          </div>
         </div>
       </dl>
 
@@ -198,22 +280,84 @@ export function PaymentPanel({
               Paid, but the order could not be closed automatically: {done.close.replace('close_failed: ', '')}
             </p>
           )}
-          <Button
-            variant="secondary"
-            className="mt-3 h-11"
-            icon={<Printer className="h-4 w-4" />}
-            onClick={onPrintReceipt}
-            disabled={done.paid <= 0}
-          >
-            Print receipt
-          </Button>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {onPreviewReceipt && (
+              <Button
+                variant="secondary"
+                className="h-11"
+                icon={<Eye className="h-4 w-4" />}
+                onClick={onPreviewReceipt}
+              >
+                Preview receipt
+              </Button>
+            )}
+            <Button
+              variant="secondary"
+              className="h-11"
+              icon={<Printer className="h-4 w-4" />}
+              onClick={onPrintReceipt}
+            >
+              Print receipt
+            </Button>
+          </div>
         </div>
       )}
 
       {b.payable > 0 && (
         <>
+          {/* Fast 1-Step Payment Box: Zaad / e-Dahab / Cash / EVC Plus -> Confirm */}
+          <div className="rounded-xl border border-orange-200 bg-orange-50/40 p-3.5">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-brand-navy">
+                <Sparkles className="h-4 w-4 text-brand-orange" /> Quick Pay &amp; Confirm ({money(b.payable)})
+              </p>
+              <span className="text-[11px] font-medium text-slate-500">Select method &amp; confirm in 1 click</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {QUICK_METHODS.map((qm) => {
+                const active = quickMethod === qm.id;
+                return (
+                  <button
+                    key={qm.id}
+                    type="button"
+                    disabled={blocked || busy}
+                    onClick={() => setQuickMethod(qm.id)}
+                    className={cn(
+                      'flex flex-col items-start rounded-xl border px-3 py-2 text-left transition',
+                      active
+                        ? 'border-brand-orange bg-white ring-2 ring-brand-orange/30'
+                        : qm.tone,
+                    )}
+                  >
+                    <span className="text-sm font-extrabold">{qm.label}</span>
+                    <span className="text-[10px] opacity-75">{qm.badge}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-2.5 flex flex-col gap-2 sm:flex-row">
+              {quickMethod !== 'cash' && (
+                <input
+                  className="input h-11 flex-1 bg-white text-sm"
+                  placeholder="Optional reference (auto-filled if left blank)"
+                  value={quickRef}
+                  onChange={(e) => setQuickRef(e.target.value)}
+                />
+              )}
+              <Button
+                variant="orange"
+                className="h-11 flex-1 text-sm font-bold"
+                loading={busy}
+                disabled={blocked || busy}
+                onClick={() => void quickConfirm()}
+              >
+                Confirm {QUICK_METHODS.find((x) => x.id === quickMethod)?.label} ({money(b.payable)})
+              </Button>
+            </div>
+          </div>
+
           <div>
-            <p className="label">Add payment method</p>
+            <p className="label">Add payment method (split or custom)</p>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
               {POS_METHODS.map((m) => {
                 const I = ICON[m.kind];
@@ -249,7 +393,9 @@ export function PaymentPanel({
                 data-sb="pay-line"
               >
                 <div className="flex items-center justify-between gap-2">
-                  <p className="font-semibold">{meta.label}</p>
+                  <p className="font-semibold">
+                    {meta.id === 'somtel_money' ? 'Somtel Money (e-Dahab)' : meta.label}
+                  </p>
                   <button
                     type="button"
                     aria-label={`Remove ${meta.label} line`}
@@ -284,10 +430,25 @@ export function PaymentPanel({
                     </label>
                   )}
                   {meta.kind !== 'cash' && (
-                    <label>
-                      <span className="label">
-                        {meta.kind === 'card' ? 'Terminal transaction ID' : 'Transaction reference'}
-                      </span>
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="label">
+                          {meta.kind === 'card' ? 'Terminal transaction ID' : 'Transaction reference'}
+                        </span>
+                        {meta.kind === 'mobile' && (
+                          <button
+                            type="button"
+                            className="text-xs font-semibold text-brand-orange hover:underline"
+                            onClick={() =>
+                              patch(l.key, {
+                                reference: `${l.method.toUpperCase().slice(0, 4)}-${o.order_number}`,
+                              })
+                            }
+                          >
+                            Auto-fill Ref
+                          </button>
+                        )}
+                      </div>
                       <input
                         className="input h-12"
                         aria-label={`${meta.label} reference`}
@@ -295,7 +456,7 @@ export function PaymentPanel({
                         maxLength={60}
                         onChange={(e) => patch(l.key, { reference: e.target.value })}
                       />
-                    </label>
+                    </div>
                   )}
                 </div>
                 {meta.kind === 'cash' && amt > 0 && (
